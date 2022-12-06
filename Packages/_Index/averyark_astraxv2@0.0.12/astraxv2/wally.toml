@@ -1,0 +1,17 @@
+[package]
+name = "averyark/astraxv2"
+version = "0.0.12"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+authors = ["averyark"]
+license = "MIT"
+description = "Astrax V2."
+
+[dependencies]
+Janitor = "howmanysmall/janitor@^1.14.2"
+BridgeNet = "ffrostflame/bridgenet@2.0.0-rc4"
+Signal = "sleitnick/signal@1.0.1"
+Promise = "evaera/promise@4.0.0"
+TestEZ = "roblox/testez@0.4.1"
+t = "osyrisrblx/t@3.0.0"
+TableUtil = "tpc9000/tableutil@0.1.1"
