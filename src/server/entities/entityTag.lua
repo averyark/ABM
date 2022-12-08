@@ -38,7 +38,7 @@ local new = function(entity)
 	entity.entityTag = entityTag:Clone()
 	entity.entityTag.displayname.Text = entity.data.name
 	entity.entityTag.Parent = entity.rootpart
-    entity.entityTag.ExtentsOffsetWorld = entity.entitytagOffset or defaultOffset
+	entity.entityTag.ExtentsOffsetWorldSpace = entity.entitytagOffset or defaultOffset
 
 	local updateHealth = function()
 		local humanoid = entity.humanoid

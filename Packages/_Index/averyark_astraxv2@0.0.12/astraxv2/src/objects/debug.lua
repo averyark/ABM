@@ -120,6 +120,11 @@ objectDebugger.new = function(_table)
 	-- Perform the appropiate procedure depending on types
 	-- __newindex value are typically functions/tables, or nil
 	local new_newindex = function(self, key, value)
+
+		if (type(ref_newindex) == "table" or type(ref_newindex) == "nil") and self._meta.newindexCache[key] == value then
+			return
+		end
+
 		if self.__DEBUG__ENABLED then
 			self:debug(("Overwrite: %s: %s"):format(tostring(key), tostring(value)))
 		end

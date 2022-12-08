@@ -18,6 +18,7 @@ local TestEZ = require(index.packages.TestEZ)
 local TableUtil = require(index.packages.TableUtil)
 
 if RunService:IsClient() then
+	local silence = {}
 	local debugUi = Instance.new("ScreenGui")
 	debugUi.Name = "__debug"
 	debugUi.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -78,6 +79,11 @@ if RunService:IsClient() then
 	local cache = {}
 
 	local manifestOutput = function(message, _type)
+		for _, s in pairs(silence) do
+			if message:match(s) then
+				return
+			end
+		end
 		if not index.debugSettings.debugEnabled then
 			return
 		end
@@ -170,6 +176,9 @@ if RunService:IsClient() then
 				end
 			end
 		end,
+		silence = function(string)
+			table.insert(silence, string)
+		end
 	}
 else
 	local onServerLog = BridgeNet.CreateBridge("__debug_serverlog")

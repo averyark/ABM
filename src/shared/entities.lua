@@ -6,7 +6,18 @@ return {
 		model = ReplicatedStorage.entities["Evil Tree"],
 
 		maxHealth = 1000,
-        rangeOfAttack = 5,
+		rangeOfAttack = 8,
+		attackCooldown = 3,
+		baseDamage = 20,
+		visualDistance = 20,
+		visualArcAngle = 100,
+		walkSpeed = 10,
+
+		agentParameter = {
+			AgentCanJump = false,
+			AgentCanClimb = false,
+			AgentRadius = 8,
+		},
 
 		entitytagOffset = Vector3.new(0, 2, 0),
 
