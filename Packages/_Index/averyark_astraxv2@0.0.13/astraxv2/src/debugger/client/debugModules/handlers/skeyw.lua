@@ -8,8 +8,8 @@ return {
 	commandInvoked = function(arguments, index)
 		local debugger = require(index.debugger)
 		if arguments[1] then
-			debugger.silence(arguments[1])
 			debugger.log("Keyword \"" .. arguments[1] .. "\" silenced")
+			debugger.silence(arguments[1])
 		else
 			error("Invalid arguments[1]")
 		end

@@ -25,16 +25,22 @@ local module = require(Astrax.module)
 local objects = require(Astrax.objects)
 local debugger = require(Astrax.debugger)
 
-local entities = require(ReplicatedStorage.shared.entities)
 local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local SimplePath = require(ReplicatedStorage.shared.SimplePath)
 
-local entityTag = require(script.Parent.entityTag)
+local entities = require(script.Parent.entities)
 
 local entity = { __DEBUG__ENABLED = false }
 local entityModule = {}
+
+local bridges = {
+	replicateEntityAnimation = BridgeNet.CreateBridge("replicateEntityAnimation"),
+	initializeEntityOnClient = BridgeNet.CreateBridge("initializeEntityOnClient"),
+	requestEntityAnimationIds = BridgeNet.CreateBridge("requestEntityAnimationIds"),
+	entityDamaged = BridgeNet.CreateBridge("entityDamaged"),
+}
 
 local states = {
 	dead = 0,
@@ -45,6 +51,8 @@ local states = {
 }
 
 local resetPathFindingRate = 10 / 30
+
+local hugeVector = Vector3.new(1, 1, 1) * math.huge
 
 function entity:attack()
 	if self.attackDebounce:isLocked() then
@@ -64,16 +72,35 @@ function entity:attack()
 	self:updateState(states.attacking)
 	self._canUpdateState = false
 
-	self._animationTracks.IdleAnimation:Stop()
+	self:replicateAnimationToClient("Stop", "IdleAnimation")
 
-	local animation: AnimationTrack = self._animationTracks.AttackAnimations[math.random(1, 2)]
-	animation:Play()
-	animation.Ended:Wait()
+	local num = math.random(1, 2)
+	self:replicateAnimationToClient("Play", "AttackAnimations", num)
+
+	task.wait(self.data.attackCooldown)
 
 	self._canUpdateState = true
 	self.attackDebounce:lock()
 	self.onAttackEnded:Fire()
 	self:idle()
+end
+
+function entity:takeDamage(player, damage, damageType, knockback)
+	if knockback then
+		local bodyVelocity = Instance.new("BodyVelocity")
+		bodyVelocity.Parent = self.rootpart
+		bodyVelocity.MaxForce = hugeVector
+		bodyVelocity.P = 1000
+		bodyVelocity.Velocity = Vector3.new(
+			-self.rootpart.CFrame.lookVector.X * knockback,
+			knockback / 2,
+			-self.rootpart.CFrame.lookVector.Z * knockback
+		)
+		task.wait(0.1)
+		bodyVelocity:Destroy()
+	end
+	self.entity.Humanoid:TakeDamage(damage)
+	bridges.entityDamaged:FireAllInRange(self.rootpart.Position, 100, self.entity, player, damage, damageType)
 end
 
 function entity:playerHit(player)
@@ -103,6 +130,17 @@ function entity:changeTarget(target)
 
 	self.resetPathFindingDebounce:lock()
 	self.pathfinding:Run(self.target.HumanoidRootPart)
+end
+
+function entity:replicateAnimationToClient(requestType, animationName, animationSubName)
+	bridges.replicateEntityAnimation:FireAllInRange(
+		self.rootpart.Position,
+		100,
+		self.entity,
+		requestType,
+		animationName,
+		animationSubName
+	)
 end
 
 --[[
@@ -143,40 +181,26 @@ function entity:idle()
 		return
 	end
 	self:updateState(states.idle)
-	self._animationTracks.WalkAnimation:Stop()
-	self._animationTracks.IdleAnimation:Play()
+	self:replicateAnimationToClient("Stop", "WalkAnimation")
+	self:replicateAnimationToClient("Play", "IdleAnimation")
 end
 
 function entity:spawn()
-	self.entity.Parent = workspace
+	self.entity.Parent = workspace.gameFolders.entities
 	self.humanoid = self.entity:WaitForChild("Humanoid")
 	self.animator = self.humanoid:WaitForChild("Animator")
 	self.rootpart = self.entity:WaitForChild("HumanoidRootPart")
 	self.hitbox = self.entity:WaitForChild("Hitbox")
 	self.head = self.entity:WaitForChild("Head")
 
-	for name, anim in pairs(self.data.animations) do
-		if type(anim) == "table" then
-			self._animationTracks[name] = {}
-			for i, subanim in pairs(anim) do
-				local animation = Instance.new("Animation")
-				animation.AnimationId = subanim
-				self._animationTracks[name][i] = self.animator:LoadAnimation(animation)
-			end
-		else
-			local animation = Instance.new("Animation")
-			animation.AnimationId = anim
-			self._animationTracks[name] = self.animator:LoadAnimation(animation)
-		end
-	end
-
 	self._maid:Add(self.humanoid.Running:Connect(function(speed)
 		if speed > 1 then
 			self.state = states.moving
-			self._animationTracks.WalkAnimation:AdjustSpeed(speed / self.data.walkSpeed)
-			self._animationTracks["WalkAnimation"]:Play()
 		else
-			self:idle()
+			if not self._canUpdateState then
+				return
+			end
+			self:updateState(states.idle)
 		end
 	end))
 
@@ -201,16 +225,19 @@ function entity:spawn()
 		--self:debugwarn(errorType)
 		debugger.warn("OBJECT WARN [<" .. tostring(self) .. ">(pathfinding)]" .. " pathfindingError:", errorType)
 		task.wait(0.2)
-        if self.target then
-            pathfinding:Run(self.target.HumanoidRootPart)
-            self.resetPathFindingDebounce:lock()
-        else
-            if self.pathfinding._status ~= "Idle" then
-                pathfinding:Stop()
-            end
-        end
+		if self.target then
+			pathfinding:Run(self.target.HumanoidRootPart)
+			self.resetPathFindingDebounce:lock()
+		else
+			if self.pathfinding._status ~= "Idle" then
+				pathfinding:Stop()
+			end
+		end
 	end))
 	self._maid:Add(pathfinding.WaypointReached:Connect(function()
+		if not self.target then
+			return
+		end
 		pathfinding:Run(self.target.HumanoidRootPart)
 		self.resetPathFindingDebounce:lock()
 	end))
@@ -221,7 +248,7 @@ function entity:spawn()
 
 	self.pathfinding = pathfinding
 
-	Promise.try(entityTag.new, self)
+	--Promise.try(entityTag.new, self)
 
 	self:debug("Spawned entity", self.data.name, " to the world")
 
@@ -316,11 +343,27 @@ entityModule.new = function(id)
 	monster:spawn()
 end
 
+entityModule.getMonster = function(model)
+	for _, monster in pairs(monsters) do
+		if monster.entity == model then
+			return monster
+		end
+	end
+end
+
 function entityModule:load()
 	local overlap = OverlapParams.new()
 	overlap.FilterType = Enum.RaycastFilterType.Whitelist
 
 	local validCharacters = {}
+
+	bridges.requestEntityAnimationIds:OnInvoke(function(player, model)
+		for _, monsterEntity in pairs(monsters) do
+			if monsterEntity.entity == model then
+				return monsterEntity.data.animations
+			end
+		end
+	end)
 
 	RunService.Heartbeat:Connect(function(deltaTime)
 		for _, monsterEntity in pairs(monsters) do

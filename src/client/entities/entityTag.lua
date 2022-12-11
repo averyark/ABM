@@ -33,16 +33,16 @@ local entityTag = ReplicatedStorage.resources.entitytag
 local defaultOffset = Vector3.new(0, 2, 0)
 
 local new = function(entity)
-	entity:assert(t.instanceIsA("Humanoid")(entity.humanoid))
+	debugger.assert(t.instanceIsA("Humanoid")(entity:FindFirstChild("Humanoid")))
 
-	entity.entityTag = entityTag:Clone()
-	entity.entityTag.displayname.Text = entity.data.name
-	entity.entityTag.Parent = entity.rootpart
-	entity.entityTag.ExtentsOffsetWorldSpace = entity.entitytagOffset or defaultOffset
+	local tag = entityTag:Clone()
+	tag.displayname.Text = entity.Name
+	tag.Parent = entity.HumanoidRootPart
+	tag.ExtentsOffsetWorldSpace = defaultOffset
 
 	local updateHealth = function()
-		local humanoid = entity.humanoid
-		local healthContainer = entity.entityTag.health.container
+		local humanoid = entity.Humanoid
+		local healthContainer = tag.health.container
 		local percent = humanoid.Health / humanoid.MaxHealth
 		healthContainer.number.Text = number.abbreviate(humanoid.Health, 2)
 			.. "/"
@@ -57,7 +57,15 @@ local new = function(entity)
 	end
 
 	updateHealth()
-	entity._maid:Add(entity.humanoid.HealthChanged:Connect(updateHealth))
+	local connection = entity.Humanoid.HealthChanged:Connect(updateHealth)
+	local connection2
+	connection2 = entity.AncestryChanged:Connect(function()
+		if not entity:IsDescendantOf(workspace.gameFolders.entities) then
+			connection:Disconnect()
+			connection2:Disconnect()
+			tag:Destroy()
+		end
+	end)
 end
 
 return {

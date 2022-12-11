@@ -57,7 +57,7 @@ local new = function(player: Player, data: nametagData)
 		end
 	end
 
-	nametag.Parent = player.Character
+	nametag.Parent = player.Character.Head
 	return nametag
 end
 

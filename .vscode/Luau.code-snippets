@@ -28,6 +28,10 @@
             "local objects = require(Astrax.objects)",
             "local debugger = require(Astrax.debugger)",
             "",
+            "local debounce = require(ReplicatedStorage.shared.debounce)",
+            "local number = require(ReplicatedStorage.shared.number)",
+            "local tween = require(ReplicatedStorage.shared.tween)",
+            "",
         ],
         "description": "-"
     },

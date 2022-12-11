@@ -135,11 +135,30 @@ end
     end
     ```
 --]]
-function debounce:lock()
+function debounce:lock(timer)
 	if self._type == debounceUtil.type.Timer then
-		self._tL = os.clock()
+		self._tL = os.clock() + (timer or 0)
 	elseif self._type == debounceUtil.type.Boolean then
 		self._bool = false
+	end
+	return self :: debounce
+end
+
+--[[
+    Unlocks the debounce forcefully.
+    ```lua
+    local debounceObject = debounce.new("something", debounceUtil.type.Timer, 2)
+    debounceObject:unlock()
+    if debounceObject:isLocked() then -- always true
+        return
+    end
+    ```
+--]]
+function debounce:unlock()
+	if self._type == debounceUtil.type.Timer then
+		self._tL = 0
+	elseif self._type == debounceUtil.type.Boolean then
+		self._bool = true
 	end
 	return self :: debounce
 end

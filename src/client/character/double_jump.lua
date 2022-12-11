@@ -63,8 +63,8 @@ local jumped = function(player: Player)
 		jumpEffectRight:Destroy()
 	end
 
-	jumpEffectLeft.Parent = player.Character.LeftFoot
-	jumpEffectRight.Parent = player.Character.RightFoot
+	jumpEffectLeft.Parent = player.Character["Left Leg"]
+	jumpEffectRight.Parent = player.Character["Right Leg"]
 	jumpEffectLeft:Emit()
 	jumpEffectRight:Emit()
 
@@ -116,10 +116,8 @@ end
 local getLandPosition = function(character)
 	local HumanoidRootPart = character.HumanoidRootPart
 
-	local leftFoot = groundRaycast(character.LeftFoot)
-	local rightFoot = groundRaycast(character.RightFoot)
-
-	print(leftFoot or rightFoot)
+	local leftFoot = groundRaycast(character["Left Leg"])
+	local rightFoot = groundRaycast(character["Right Leg"])
 
 	return Vector3.new(HumanoidRootPart.Position.X, leftFoot or rightFoot, HumanoidRootPart.Position.Z)
 end
