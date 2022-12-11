@@ -35,6 +35,7 @@ local bridges = {
 	initializeEntityOnClient = BridgeNet.CreateBridge("initializeEntityOnClient"),
 	requestEntityAnimationIds = BridgeNet.CreateBridge("requestEntityAnimationIds"),
 	entityDamaged = BridgeNet.CreateBridge("entityDamaged"),
+	entityDied = BridgeNet.CreateBridge("entityDied"),
 }
 
 local gameFolders = workspace.gameFolders
@@ -101,6 +102,23 @@ function clientEntityClassTable:setup()
 	self.damageBillboard.Parent = self.entity
 
 	return self
+end
+
+function clientEntityClassTable:died()
+	local dyingAnimation = self.animationTracks["DyingAnimation"]
+	local length = dyingAnimation.Length
+	dyingAnimation:Play()
+	self.entityTag:Destroy()
+	self.entity.Parent = gameFolders.deadEntities
+	for _, object in pairs(self.entity:GetDescendants()) do
+		if object:IsA("BasePart") then
+			tween.instance(object, {
+				Transparency = 1,
+			}, length)
+		end
+	end
+	task.wait(length)
+	self:Destroy()
 end
 
 local clientEntityClass = objects.new(clientEntityClassTable, {})
@@ -180,6 +198,9 @@ return {
 				TextStrokeTransparency = 1,
 			}, 0.35, "Back").Completed:Wait()
 			--damageText:Destroy()
+		end)
+		bridges.entityDied:Connect(function(entityModel)
+			clientEntityObjects[entityModel]:died()
 		end)
 
 		gameFolders.entities.ChildAdded:Connect(new)

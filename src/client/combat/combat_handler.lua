@@ -172,7 +172,7 @@ function combatHandler:load()
 		weapon:start()
 		weapon.hit:Connect(function(target)
 			if target.Parent:FindFirstChild("Humanoid") then
-				bridges.damageEntity:Fire(target.Parent, weapon.id)
+				bridges.damageEntity:Fire(target.Parent, weapon.id, weapon.character.HumanoidRootPart.CFrame)
 				target.Parent.Humanoid:TakeDamage(weapon.data.baseDamage)
 			end
 		end)

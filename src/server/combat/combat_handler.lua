@@ -70,7 +70,7 @@ return {
 				loadPlayerWeapon(player, 1)
 			end
 		end)
-		bridges.damageEntity:Connect(function(fromPlayer, target, weaponId)
+		bridges.damageEntity:Connect(function(fromPlayer, target, weaponId, cframeOnhit)
 			debugger.log("player hit target")
 			local weaponData = find(weaponId)
 			debugger.assert(weaponData, "Provided id does not correlate to any weapon in the database: " .. weaponId)
@@ -95,7 +95,7 @@ return {
 					damage *= multiplication
 				end
 
-				monster:takeDamage(fromPlayer, damage, damageType, weaponData.knockback)
+				monster:takeDamage(fromPlayer, damage, damageType, weaponData.knockback, cframeOnhit)
 			end
 			--target.Humanoid:TakeDamage(weaponData.baseDamage)
 		end)

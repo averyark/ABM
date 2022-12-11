@@ -40,6 +40,7 @@ local bridges = {
 	initializeEntityOnClient = BridgeNet.CreateBridge("initializeEntityOnClient"),
 	requestEntityAnimationIds = BridgeNet.CreateBridge("requestEntityAnimationIds"),
 	entityDamaged = BridgeNet.CreateBridge("entityDamaged"),
+	entityDied = BridgeNet.CreateBridge("entityDied"),
 }
 
 local states = {
@@ -85,16 +86,16 @@ function entity:attack()
 	self:idle()
 end
 
-function entity:takeDamage(player, damage, damageType, knockback)
+function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
 	if knockback then
 		local bodyVelocity = Instance.new("BodyVelocity")
 		bodyVelocity.Parent = self.rootpart
 		bodyVelocity.MaxForce = hugeVector
 		bodyVelocity.P = 1000
 		bodyVelocity.Velocity = Vector3.new(
-			-self.rootpart.CFrame.lookVector.X * knockback,
+			playerCFrame.lookVector.X * knockback,
 			knockback / 2,
-			-self.rootpart.CFrame.lookVector.Z * knockback
+			playerCFrame.lookVector.Z * knockback
 		)
 		task.wait(0.1)
 		bodyVelocity:Destroy()
@@ -130,6 +131,10 @@ function entity:changeTarget(target)
 
 	self.resetPathFindingDebounce:lock()
 	self.pathfinding:Run(self.target.HumanoidRootPart)
+end
+
+function entity:Destroy()
+	self._maid:Destroy()
 end
 
 function entity:replicateAnimationToClient(requestType, animationName, animationSubName)
@@ -193,6 +198,13 @@ function entity:spawn()
 	self.hitbox = self.entity:WaitForChild("Hitbox")
 	self.head = self.entity:WaitForChild("Head")
 
+	for _, signal in pairs(self) do
+		if Signal.Is(signal) then
+			self._maid:Add(signal)
+		end
+	end
+
+	self._maid:Add(self.entity)
 	self._maid:Add(self.humanoid.Running:Connect(function(speed)
 		if speed > 1 then
 			self.state = states.moving
@@ -223,7 +235,7 @@ function entity:spawn()
 			return
 		end
 		--self:debugwarn(errorType)
-		debugger.warn("OBJECT WARN [<" .. tostring(self) .. ">(pathfinding)]" .. " pathfindingError:", errorType)
+		--debugger.warn("OBJECT WARN [<" .. tostring(self) .. ">(pathfinding)]" .. " pathfindingError:", errorType)
 		task.wait(0.2)
 		if self.target then
 			pathfinding:Run(self.target.HumanoidRootPart)
@@ -240,6 +252,9 @@ function entity:spawn()
 		end
 		pathfinding:Run(self.target.HumanoidRootPart)
 		self.resetPathFindingDebounce:lock()
+	end))
+	self._maid:Add(self.humanoid.Died:Connect(function()
+		self.onDeath:Fire()
 	end))
 	if self.target then
 		pathfinding:Run(self.target.HumanoidRootPart)
@@ -302,6 +317,7 @@ local new = function(id: number, spawnPositon: Vector3)
 		onAttackBegin = Signal.new(),
 		onAttackEnded = Signal.new(),
 		onPlayerEnterViewRange = Signal.new(),
+		onDeath = Signal.new(),
 
 		attackDebounce = debounce.new(debounce.type.Timer, data.attackCooldown),
 		resetPathFindingDebounce = debounce.new(debounce.type.Timer, resetPathFindingRate),
@@ -310,7 +326,6 @@ local new = function(id: number, spawnPositon: Vector3)
 		canDamage = false,
 		target = nil,
 
-		_animationTracks = {},
 		_canUpdateState = true,
 		_damagedPlayers = {},
 		_spawnPosition = spawnPositon,
@@ -339,6 +354,13 @@ entityModule.new = function(id)
 			return
 		end
 		monster:changeTarget(player.Character)
+	end)
+	monster.onDeath:Connect(function()
+		monster.entity.HumanoidRootPart.Anchored = true
+		bridges.entityDied:FireAllInRange(monster.rootpart.Position, 100, monster.entity)
+		task.wait(1)
+		table.remove(monsters, table.find(monsters, monster))
+		monster:Destroy()
 	end)
 	monster:spawn()
 end

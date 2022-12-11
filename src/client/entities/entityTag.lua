@@ -43,14 +43,16 @@ local new = function(entity)
 	local updateHealth = function()
 		local humanoid = entity.Humanoid
 		local healthContainer = tag.health.container
-		local percent = humanoid.Health / humanoid.MaxHealth
-		healthContainer.number.Text = number.abbreviate(humanoid.Health, 2)
+		local percent = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+		healthContainer.number.Text = number.abbreviate(math.max(humanoid.Health, 0), 2)
 			.. "/"
 			.. number.abbreviate(humanoid.MaxHealth, 2)
+		if not healthContainer:FindFirstChild("new") then return end
 		tween.instance(healthContainer.new, {
 			Size = UDim2.fromScale(percent, 1),
 		}, 0.3)
 		task.wait(0.1)
+		if not healthContainer:FindFirstChild("old") then return end
 		tween.instance(healthContainer.old, {
 			Size = UDim2.fromScale(percent, 1),
 		}, 0.9)
@@ -66,6 +68,8 @@ local new = function(entity)
 			tag:Destroy()
 		end
 	end)
+
+	return tag
 end
 
 return {

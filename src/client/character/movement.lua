@@ -151,33 +151,44 @@ function movement:load()
 
 		local charPosition = character.HumanoidRootPart.Position
 
-		if resetTick and os.clock() > resetTick then
-			resetTick = nil
-			unlockTarget(locking)
-		end
-
-		for _, entityModel in pairs(entities:GetChildren()) do
-			if entityModel:FindFirstChild("HumanoidRootPart") then
-				local rootpart = entityModel.HumanoidRootPart
-				local m1 = (rootpart.Position - charPosition).Magnitude
-				if m1 < 20 then
-					if locking then
-						local m2 = (locking.HumanoidRootPart.Position - charPosition).Magnitude
-						if m1 < m2 then
+		local check = function()
+			for _, entityModel in pairs(entities:GetChildren()) do
+				if entityModel:FindFirstChild("HumanoidRootPart") then
+					local rootpart = entityModel.HumanoidRootPart
+					local m1 = (rootpart.Position - charPosition).Magnitude
+					if m1 < 20 then
+						if locking and locking ~= rootpart.Parent then
+							local m2 = (locking.HumanoidRootPart.Position - charPosition).Magnitude
+							if m1 < m2 then
+								lockTarget(rootpart.Parent)
+								--resetTick = nil
+							end
+						else
 							lockTarget(rootpart.Parent)
-							resetTick = nil
+							--resetTick = nil
 						end
 					else
-						lockTarget(rootpart.Parent)
-						resetTick = nil
+						unlockTarget(rootpart.Parent)
 					end
-				else
-					unlockTarget(rootpart.Parent)
 				end
 			end
 		end
 
-		lockToObject(locking and locking.HumanoidRootPart)
+		if (resetTick and os.clock() > resetTick) or (not resetTick or not locking) then
+			--resetTick = nil
+			check()
+			--unlockTarget(locking)
+		end
+
+		if locking and not locking:FindFirstChild("HumanoidRootPart") then
+			unlockTarget(locking)
+		end
+
+		if locking and locking.Parent ~= gameFolders.entities then
+			unlockTarget(locking)
+		end
+
+		lockToObject(locking and locking:FindFirstChild("HumanoidRootPart"))
 
 		if locking then
 			local highlight = locking:FindFirstChild("TargetHighlight")
