@@ -38,6 +38,8 @@ local sprintKeyDown = false
 local isSprinting = false
 local character: typeof(Players.LocalPlayer.Character)
 
+local tweenObject1, tweenObject2
+
 local beginSprint = function()
 	if usingWeaponState then
 		return
@@ -48,12 +50,23 @@ local beginSprint = function()
 	if isSprinting then
 		return
 	end
+	if tweenObject1 then
+		tweenObject1:Destroy()
+		tweenObject1 = nil
+	end
+	if tweenObject2 then
+		tweenObject2:Destroy()
+		tweenObject2 = nil
+	end
 	isSprinting = true
 
 	local humanoid = character.Humanoid
 
-	tween.instance(humanoid, {
+	tweenObject1 = tween.instance(humanoid, {
 		WalkSpeed = 24,
+	}, 0.5, "Cubic")
+	tweenObject2 = tween.instance(workspace.CurrentCamera, {
+		FieldOfView = 80,
 	}, 0.5, "Cubic")
 
 	movement.sprinting(true)
@@ -66,13 +79,24 @@ local endSprint = function()
 	if not isSprinting then
 		return
 	end
+	if tweenObject1 then
+		tweenObject1:Destroy()
+		tweenObject1 = nil
+	end
+	if tweenObject2 then
+		tweenObject2:Destroy()
+		tweenObject2 = nil
+	end
 
 	isSprinting = false
 
 	local humanoid = character.Humanoid
 
-	tween.instance(humanoid, {
+	tweenObject1 = tween.instance(humanoid, {
 		WalkSpeed = 16,
+	}, 0.5, "Cubic")
+	tweenObject2 = tween.instance(workspace.CurrentCamera, {
+		FieldOfView = 70,
 	}, 0.5, "Cubic")
 
 	movement.sprinting(false)

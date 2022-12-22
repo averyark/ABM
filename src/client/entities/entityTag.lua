@@ -47,12 +47,16 @@ local new = function(entity)
 		healthContainer.number.Text = number.abbreviate(math.max(humanoid.Health, 0), 2)
 			.. "/"
 			.. number.abbreviate(humanoid.MaxHealth, 2)
-		if not healthContainer:FindFirstChild("new") then return end
+		if not healthContainer:FindFirstChild("new") then
+			return
+		end
 		tween.instance(healthContainer.new, {
 			Size = UDim2.fromScale(percent, 1),
 		}, 0.3)
 		task.wait(0.1)
-		if not healthContainer:FindFirstChild("old") then return end
+		if not healthContainer:FindFirstChild("old") then
+			return
+		end
 		tween.instance(healthContainer.old, {
 			Size = UDim2.fromScale(percent, 1),
 		}, 0.9)

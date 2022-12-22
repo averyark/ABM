@@ -6,6 +6,8 @@ return {
 		model = ReplicatedStorage.entities["Evil Tree"],
 
 		maxHealth = 1000,
+		defence = 20,
+		knockbackResistance = 0,
 		rangeOfAttack = 8,
 		attackCooldown = 3,
 		baseDamage = 20,

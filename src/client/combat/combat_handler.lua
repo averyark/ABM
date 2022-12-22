@@ -47,7 +47,8 @@ clientWeaponTable.__index = clientWeaponTable
 local animations = {
 	single_wield = {
 		idle = resouces.one_sword_idle,
-		walk = resouces.one_sword_run,
+		run = resouces.one_sword_run,
+		walk = resouces.one_sword_walk,
 		combo = {
 			resouces.one_sword_verticalSlash1,
 			resouces.one_sword_horizontalSlash,
@@ -63,10 +64,12 @@ function clientWeaponTable:equip()
 
 	local idle = animations[self.data.class].idle
 	local walk = animations[self.data.class].walk
+	local run = animations[self.data.class].run
 
 	local characterAnimationScript = self.character:WaitForChild("Animate")
 
 	characterAnimationScript.walk.WalkAnim.AnimationId = walk.AnimationId
+	characterAnimationScript.run.RunAnim.AnimationId = run.AnimationId
 	characterAnimationScript.idle.Animation1.AnimationId = idle.AnimationId
 	characterAnimationScript.idle.Animation2.AnimationId = idle.AnimationId
 
@@ -125,6 +128,41 @@ function clientWeaponTable:start()
 	end))
 	self.hitboxClass.OnHit:Connect(function(...)
 		self.hit:Fire(...)
+	end)
+
+	local animator = self.character.Humanoid.Animator
+	local walk = animations[self.data.class].walk
+	local run = animations[self.data.class].run
+	local walkAnim, runAnim = animator:LoadAnimation(walk), animator:LoadAnimation(run)
+	local isRunPlaying = false
+
+	walkAnim.Priority = Enum.AnimationPriority.Movement
+	runAnim.Priority = Enum.AnimationPriority.Movement
+
+	self.character.Humanoid.Running:Connect(function(speed)
+		if speed > 18 then
+			if isRunPlaying then
+				return
+			end
+			walkAnim:Stop()
+			runAnim:Play(0.5)
+			isRunPlaying = true
+		elseif speed <= 18 and speed > 0 then
+			runAnim:Stop()
+			walkAnim:Play(0.5)
+			isRunPlaying = false
+		else
+			runAnim:Stop()
+			walkAnim:Stop()
+			isRunPlaying = false
+		end
+	end)
+	self.character.Humanoid.StateChanged:Connect(function(old, new)
+		if new ~= Enum.HumanoidStateType.Running or new ~= Enum.HumanoidStateType.RunningNoPhysics then
+			runAnim:Stop()
+			walkAnim:Stop()
+			isRunPlaying = false
+		end
 	end)
 	self._maid:Add(self.hitboxClass)
 end
