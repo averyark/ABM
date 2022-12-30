@@ -54,6 +54,7 @@ local loadPlayerWeapon = function(player, id)
 	local weaponTool = data.model:Clone()
 
 	weaponTool.Parent = player.Character
+	
 
 	bridges.changeWeapon:FireTo(player, id, weaponTool)
 end
@@ -62,8 +63,16 @@ local random = Random.new()
 
 return {
 	preload = function()
-		Players.PlayerAdded:Connect(function(player)
+		bridges.changeWeapon:Connect(function(player)
+			local connection
 			player.CharacterAdded:Connect(function()
+				if connection then
+					connection:Disconnect()
+				end
+				connection = player.Backpack.ChildAdded:Connect(function(object)
+					task.wait()
+					object.Parent = player.Character
+				end)
 				loadPlayerWeapon(player, 1)
 			end)
 			if player.Character then
@@ -71,7 +80,7 @@ return {
 			end
 		end)
 		bridges.damageEntity:Connect(function(fromPlayer, target, weaponId, cframeOnhit)
-			debugger.log("player hit target")
+			--debugger.log("player hit target")
 			local weaponData = find(weaponId)
 			debugger.assert(weaponData, "Provided id does not correlate to any weapon in the database: " .. weaponId)
 

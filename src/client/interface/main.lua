@@ -219,6 +219,8 @@ function interface:load()
 			interface.unfocus()
 		end)
 	end
+    
+    print("done")
 end
 
 return interface

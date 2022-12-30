@@ -117,6 +117,10 @@ function sprint:load()
 		isSprinting = false
 		character = char
 	end)
+	if player.Character then
+		isSprinting = false
+		character = player.Character
+	end
 	ContextActionService:BindAction("sprint", function(_, inputState, inputObject: InputObject)
 		if inputObject.KeyCode == Enum.KeyCode.LeftShift then
 			if inputState == Enum.UserInputState.Begin then

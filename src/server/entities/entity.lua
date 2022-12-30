@@ -10,6 +10,7 @@ local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
 local StarterPlayer = game:GetService("StarterPlayer")
 
 local BridgeNet = require(ReplicatedStorage.Packages.BridgeNet)
@@ -73,17 +74,20 @@ function entity:attack()
 	self:updateState(states.attacking)
 	self._canUpdateState = false
 
-	self:replicateAnimationToClient("Stop", "IdleAnimation")
+	--self:replicateAnimationToClient("Stop", "IdleAnimation")
 
-	local num = math.random(1, 2)
+	local num = math.random(1, #self.data.animations.AttackAnimations)
 	self:replicateAnimationToClient("Play", "AttackAnimations", num)
 
-	task.wait(self.data.attackCooldown)
+	debugger.log(self._attackAnimationLengths)
 
-	self._canUpdateState = true
+	task.wait(self._attackAnimationLengths[num])
 	self.attackDebounce:lock()
 	self.onAttackEnded:Fire()
+	self._canUpdateState = true
 	self:idle()
+
+	--task.wait(self.data.attackCooldown)
 end
 
 function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
@@ -94,11 +98,15 @@ function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
 		bodyVelocity.P = 1000
 		bodyVelocity.Velocity = Vector3.new(
 			playerCFrame.lookVector.X * knockback,
-			knockback / 2,
+			knockback * 0.7,
 			playerCFrame.lookVector.Z * knockback
 		)
+		local num = math.random(1, #self.data.animations.KnockbackAnimation)
+		self:replicateAnimationToClient("Play", "KnockbackAnimation", num)
+		self._canUpdateState = false
 		task.wait(0.1)
 		bodyVelocity:Destroy()
+		self._canUpdateState = true
 	end
 	self.entity.Humanoid:TakeDamage(damage)
 	bridges.entityDamaged:FireAllInRange(self.rootpart.Position, 100, self.entity, player, damage, damageType)
@@ -190,13 +198,34 @@ function entity:idle()
 	self:replicateAnimationToClient("Play", "IdleAnimation")
 end
 
+local tester = ServerStorage.AnimationProvider.Humanoid.Animator
+local animationCache = {}
+
+local getAnimationLength = function(animationId)
+	if animationCache[animationId] then return animationCache[animationId] end
+	local animation = Instance.new("Animation")
+	animation.AnimationId = animationId
+	local track = tester:LoadAnimation(animation)
+	local length = track.Length
+
+	animationCache[animationId] = length
+
+	track:Destroy()
+
+	return length
+end
+
 function entity:spawn()
 	self.entity.Parent = workspace.gameFolders.entities
 	self.humanoid = self.entity:WaitForChild("Humanoid")
 	self.animator = self.humanoid:WaitForChild("Animator")
 	self.rootpart = self.entity:WaitForChild("HumanoidRootPart")
-	self.hitbox = self.entity:WaitForChild("Hitbox")
+	self.hitbox = self.entity:WaitForChild("Damagebox")
 	self.head = self.entity:WaitForChild("Head")
+
+	for i, animationId in pairs(self.data.animations.AttackAnimations) do
+		self._attackAnimationLengths[i] = getAnimationLength(animationId)
+	end
 
 	for _, signal in pairs(self) do
 		if Signal.Is(signal) then
@@ -216,6 +245,7 @@ function entity:spawn()
 		end
 	end))
 
+	self.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	self.humanoid.WalkSpeed = self.data.walkSpeed
 	self.humanoid.MaxHealth = self.data.maxHealth
 	self.humanoid.Health = self.data.maxHealth
@@ -326,6 +356,7 @@ local new = function(id: number, spawnPositon: Vector3)
 		canDamage = false,
 		target = nil,
 
+		_attackAnimationLengths = {},
 		_canUpdateState = true,
 		_damagedPlayers = {},
 		_spawnPosition = spawnPositon,
@@ -335,34 +366,36 @@ end
 local monsters = {}
 
 entityModule.new = function(id)
-	local monster = new(id)
-	monster.onSpawn:Connect(function()
-		table.insert(monsters, monster)
+	Promise.try(function()
+		local monster = new(id)
+		monster.onSpawn:Connect(function()
+			table.insert(monsters, monster)
+		end)
+		monster.onPlayerHit:Connect(function(player)
+			player.Character.Humanoid:TakeDamage(monster.data.baseDamage)
+		end)
+		monster.onAttackBegin:Connect(function()
+			task.wait(0.2)
+			monster.canDamage = true
+		end)
+		monster.onAttackEnded:Connect(function()
+			monster.canDamage = false
+		end)
+		monster.onPlayerEnterViewRange:Connect(function(player)
+			if monster.target and monster:isValidTarget(monster.target) then
+				return
+			end
+			monster:changeTarget(player.Character)
+		end)
+		monster.onDeath:Connect(function()
+			monster.entity.HumanoidRootPart.Anchored = true
+			bridges.entityDied:FireAllInRange(monster.rootpart.Position, 100, monster.entity)
+			task.wait(1)
+			table.remove(monsters, table.find(monsters, monster))
+			monster:Destroy()
+		end)
+		monster:spawn()
 	end)
-	monster.onPlayerHit:Connect(function(player)
-		player.Character.Humanoid:TakeDamage(monster.data.baseDamage)
-	end)
-	monster.onAttackBegin:Connect(function()
-		task.wait(0.2)
-		monster.canDamage = true
-	end)
-	monster.onAttackEnded:Connect(function()
-		monster.canDamage = false
-	end)
-	monster.onPlayerEnterViewRange:Connect(function(player)
-		if monster.target and monster:isValidTarget(monster.target) then
-			return
-		end
-		monster:changeTarget(player.Character)
-	end)
-	monster.onDeath:Connect(function()
-		monster.entity.HumanoidRootPart.Anchored = true
-		bridges.entityDied:FireAllInRange(monster.rootpart.Position, 100, monster.entity)
-		task.wait(1)
-		table.remove(monsters, table.find(monsters, monster))
-		monster:Destroy()
-	end)
-	monster:spawn()
 end
 
 entityModule.getMonster = function(model)
@@ -395,6 +428,15 @@ function entityModule:load()
 
 			table.clear(validCharacters)
 
+			if monsterEntity.target then
+				if not monsterEntity.target:FindFirstChild("Humanoid") then
+					monsterEntity:changeTarget(nil)
+				else
+					if monsterEntity.target.Humanoid.Health < 1 then
+						monsterEntity:changeTarget(nil)
+					end
+				end
+			end
 			if monsterEntity.target then
 				if not monsterEntity.target:FindFirstChild("HumanoidRootPart") then
 					monsterEntity:changeTarget(nil)
@@ -439,26 +481,13 @@ function entityModule:load()
 						monsterEntity:playerInView(player)
 					end
 				end
-
-				--[[]]
 			end
-
-			--[[local target = monsterEntity.target
-            if target and target:FindFirstChild("HumanoidRootPart") then
-                local targetVec = target.HumanoidRootPart.Position - monsterEntity.rootpart.Position
-                if targetVec.Magnitude > monsterEntity.data.rangeOfAttack then
-                    if targetVec.Magnitude <= monsterEntity.data.visualDistance then
-                        monsterEntity:changeTarget(target)
-                    end
-                end
-            else
-                monsterEntity:changeTarget(nil)
-            end]]
 
 			if monsterEntity.canDamage then
 				overlap.FilterDescendantsInstances = validCharacters
 
-				local overlaps = workspace:GetPartsInPart(monsterEntity.hitbox, overlap)
+				local hitbox = monsterEntity.hitbox
+				local overlaps = workspace:GetPartBoundsInBox(hitbox.CFrame, hitbox.Size, overlap)
 
 				for _, characterHit in pairs(overlaps) do
 					local player = Players:GetPlayerFromCharacter(characterHit.Parent)

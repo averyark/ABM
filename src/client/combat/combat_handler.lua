@@ -205,6 +205,7 @@ function new(id: number, weaponTool: Tool)
 end
 
 function combatHandler:load()
+	bridges.changeWeapon:Fire()
 	bridges.changeWeapon:Connect(function(...)
 		local weapon = new(...)
 		weapon:start()

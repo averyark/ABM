@@ -151,7 +151,7 @@ return {
 				if not clientEntityObject then
 					return
 				end
-
+				print(requestType, animationName, animationSubName)
 				if animationSubName then
 					clientEntityObject.animationTracks[animationName][animationSubName][requestType or "Play"](
 						clientEntityObject.animationTracks[animationName][animationSubName],

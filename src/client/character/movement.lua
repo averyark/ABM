@@ -202,6 +202,11 @@ function movement:load()
 	player.CharacterAdded:Connect(function(char)
 		character = char
 	end)
+
+	if player.Character then
+		character = player.Character
+	end
+
 end
 
 movement.sprinting = sprinting

@@ -30,7 +30,7 @@ local tween = require(ReplicatedStorage.shared.tween)
 
 local entityTag = ReplicatedStorage.resources.entitytag
 
-local defaultOffset = Vector3.new(0, 2, 0)
+local defaultOffset = Vector3.new(0, 4.5, 0)
 
 local new = function(entity)
 	debugger.assert(t.instanceIsA("Humanoid")(entity:FindFirstChild("Humanoid")))
