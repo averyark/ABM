@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
+local SoundService = game:GetService("SoundService")
 local StarterGui = game:GetService("StarterGui")
 local StarterPlayer = game:GetService("StarterPlayer")
 
@@ -39,6 +40,8 @@ local playerCamera = workspace.CurrentCamera
 
 local interfaceList = {}
 local showingUi
+
+local uiSounds = ReplicatedStorage.resources.ui_sound_effects
 
 interface.showing = Signal.new()
 interface.hiding = Signal.new()
@@ -91,6 +94,10 @@ interface.focus = function(ui)
 	showingUi.mainframe.Visible = false
 	showingUi.scaler.Scale = 0.9
 	showingUi.mainframe.Position = UDim2.fromScale(0.5, 0.8)
+
+	if showingUi.Name == "shop" then
+		SoundService:PlayLocalSound(uiSounds["shop ui sound"])
+	end
 
 	tween.instance(showingUi.mainframe, {
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -151,9 +158,9 @@ function interface:load()
 		tween.instance(button.tip.stroke, {
 			Transparency = 1,
 		}, 0.2)
-        tween.instance(button.icon, {
-            Size = UDim2.fromOffset(32, 32)
-        }, .2)
+		tween.instance(button.icon, {
+			Size = UDim2.fromOffset(32, 32),
+		}, 0.2)
 	end
 
 	local selected = function(button)
@@ -167,7 +174,6 @@ function interface:load()
 
 		local color = buttons[button].hovered
 
-        
 		tween.instance(button.tip.stroke, {
 			Color = color,
 		}, 0.2)
@@ -180,9 +186,9 @@ function interface:load()
 		tween.instance(button.tip.stroke, {
 			Transparency = 0,
 		}, 0.2)
-        tween.instance(button.icon, {
-            Size = UDim2.fromOffset(38, 38)
-        }, .2)
+		tween.instance(button.icon, {
+			Size = UDim2.fromOffset(38, 38),
+		}, 0.2)
 	end
 
 	for _, name in pairs(list) do
@@ -219,8 +225,46 @@ function interface:load()
 			interface.unfocus()
 		end)
 	end
-    
-    print("done")
+
+	local connect = function(button)
+		button.Activated:Connect(function()
+			SoundService:PlayLocalSound(uiSounds.Click)
+		end)
+		button.MouseEnter:Connect(function()
+			--SoundService:PlayLocalSound(uiSounds.Hover)
+		end)
+	end
+
+	for _, gui in pairs(playerGui:GetChildren()) do
+		if gui:GetAttribute("clickSFX") == true then
+			for _, button in pairs(gui:GetDescendants()) do
+				if button:IsA("GuiButton") then
+					connect(button)
+				end
+			end
+			gui.DescendantAdded:Connect(function(button)
+				if button:IsA("GuiButton") then
+					connect(button)
+				end
+			end)
+		end
+	end
+	playerGui.ChildAdded:Connect(function(gui)
+		if gui:GetAttribute("clickSFX") == true then
+			for _, button in pairs(gui:GetDescendants()) do
+				if button:IsA("GuiButton") then
+					connect(button)
+				end
+			end
+			gui.DescendantAdded:Connect(function(button)
+				if button:IsA("GuiButton") then
+					connect(button)
+				end
+			end)
+		end
+	end)
+
+	SoundService:PlayLocalSound(SoundService.music)
 end
 
 return interface

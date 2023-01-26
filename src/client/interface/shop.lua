@@ -43,76 +43,74 @@ local buttonValueIncrement = 0.4
 local selectedPage
 
 local selectPage = function(pageName)
-    if selectedPage then
-        local button = selectedPage.button
+	if selectedPage then
+		local button = selectedPage.button
 
-        if t.instanceIsA("GuiButton")(button) then
-            tween.instance(button.innerOutline.stroke, {
-                Color = buttonColorCache[button].defaultColor
-            }, .2)
-            tween.instance(button.icon, {
-                Size = UDim2.fromOffset(32, 32)
-            }, .2)
-        end
-    end
-    local pageInstance = pageContainer:FindFirstChild(pageName)
-    local button = buttons:FindFirstChild(pageName)
+		if t.instanceIsA("GuiButton")(button) then
+			tween.instance(button.innerOutline.stroke, {
+				Color = buttonColorCache[button].defaultColor,
+			}, 0.2)
+			tween.instance(button.icon, {
+				Size = UDim2.fromOffset(32, 32),
+			}, 0.2)
+		end
+	end
+	local pageInstance = pageContainer:FindFirstChild(pageName)
+	local button = buttons:FindFirstChild(pageName)
 
-    debugger.assert(t.instanceIsA("GuiObject")(pageInstance))
-    debugger.assert(t.instanceIsA("GuiButton")(button))
+	debugger.assert(t.instanceIsA("GuiObject")(pageInstance))
+	debugger.assert(t.instanceIsA("GuiButton")(button))
 
-    pageLayout:JumpTo(pageInstance)
+	pageLayout:JumpTo(pageInstance)
 
-    tween.instance(button.innerOutline.stroke, {
-        Color = buttonColorCache[button].hoveredColor
-    }, .3)
-    tween.instance(button.icon, {
-        Size = UDim2.fromOffset(32, 32)
-    }, .15).Completed:Wait()
-    tween.instance(button.icon, {
-        Size = UDim2.fromOffset(38, 38)
-    }, .2)
+	tween.instance(button.innerOutline.stroke, {
+		Color = buttonColorCache[button].hoveredColor,
+	}, 0.3)
+	tween.instance(button.icon, {
+		Size = UDim2.fromOffset(32, 32),
+	}, 0.15).Completed:Wait()
+	tween.instance(button.icon, {
+		Size = UDim2.fromOffset(38, 38),
+	}, 0.2)
 
-    selectedPage = {page = pageInstance, button = button}
-    print ("selected" .. pageName)
+	selectedPage = { page = pageInstance, button = button }
 end
 
 function shop:load()
-    print("loading")
-    for _, button in pairs(buttons:GetChildren()) do
-        if button:IsA("GuiButton") then
-            if not buttonColorCache[button] then
-                local defaultColor = button.innerOutline.stroke.Color
-                local h, s, v = defaultColor:ToHSV()
-                local color = Color3.fromHSV(h, s, v + buttonValueIncrement)
+	for _, button in pairs(buttons:GetChildren()) do
+		if button:IsA("GuiButton") then
+			if not buttonColorCache[button] then
+				local defaultColor = button.innerOutline.stroke.Color
+				local h, s, v = defaultColor:ToHSV()
+				local color = Color3.fromHSV(h, s, v + buttonValueIncrement)
 
-                buttonColorCache[button] = {defaultColor = defaultColor, hoveredColor = color}
-            end
-            button.Activated:Connect(function()
-                selectPage(button.Name)
-            end)
-            button.MouseEnter:Connect(function()
-                tween.instance(button.innerOutline.stroke, {
-                    Color = buttonColorCache[button].hoveredColor
-                }, .3)
-                tween.instance(button.icon, {
-                    Size = UDim2.fromOffset(38, 38)
-                }, .2)
-            end)
-            button.MouseLeave:Connect(function()
-                if selectedPage and selectedPage.button == button then
-                    return
-                end
-                tween.instance(button.innerOutline.stroke, {
-                    Color = buttonColorCache[button].defaultColor
-                }, .2)
-                tween.instance(button.icon, {
-                    Size = UDim2.fromOffset(32, 32)
-                }, .2)
-            end)
-        end
-    end
-    selectPage("featured")
+				buttonColorCache[button] = { defaultColor = defaultColor, hoveredColor = color }
+			end
+			button.Activated:Connect(function()
+				selectPage(button.Name)
+			end)
+			button.MouseEnter:Connect(function()
+				tween.instance(button.innerOutline.stroke, {
+					Color = buttonColorCache[button].hoveredColor,
+				}, 0.3)
+				tween.instance(button.icon, {
+					Size = UDim2.fromOffset(38, 38),
+				}, 0.2)
+			end)
+			button.MouseLeave:Connect(function()
+				if selectedPage and selectedPage.button == button then
+					return
+				end
+				tween.instance(button.innerOutline.stroke, {
+					Color = buttonColorCache[button].defaultColor,
+				}, 0.2)
+				tween.instance(button.icon, {
+					Size = UDim2.fromOffset(32, 32),
+				}, 0.2)
+			end)
+		end
+	end
+	selectPage("featured")
 end
 
 return shop

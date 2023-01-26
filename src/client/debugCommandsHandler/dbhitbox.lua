@@ -13,7 +13,7 @@ local selectionBox = Instance.new("SelectionBox")
 selectionBox.Name = "__DEBUG"
 selectionBox.Color3 = Color3.fromRGB(0, 0, 255)
 selectionBox.LineThickness = 0.05
-selectionBox.SurfaceTransparency = .95
+selectionBox.SurfaceTransparency = 0.95
 selectionBox.SurfaceColor3 = Color3.fromRGB(0, 0, 255)
 
 local renderEntitySelection = function(entity)
@@ -33,11 +33,11 @@ return {
 
 		if arguments[1] == "true" then
 			dump:Add(workspace.gameFolders.entities.ChildAdded:Connect(function(child)
-                renderEntitySelection(child)
-            end))
-            for _, child in pairs(workspace.gameFolders.entities:GetChildren()) do
-                renderEntitySelection(child)
-            end
+				renderEntitySelection(child)
+			end))
+			for _, child in pairs(workspace.gameFolders.entities:GetChildren()) do
+				renderEntitySelection(child)
+			end
 		elseif arguments[1] == "false" then
 			dump:Cleanup()
 		else

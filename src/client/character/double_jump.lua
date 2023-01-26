@@ -89,7 +89,6 @@ local land = function(player: Player, position: Vector3, velocity)
 	landEffect.Position = position
 	landEffect.Hit:Emit()
 	local a = math.clamp(velocity / 80, 1, 1.5)
-	print("VALUE:", a)
 	landEffect.Land.PlaybackSpeed = a
 	landEffect.Land:Play()
 

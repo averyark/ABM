@@ -35,6 +35,7 @@ local sprint = require(script.Parent.Parent.character.sprint)
 local bridges = {
 	changeWeapon = BridgeNet.CreateBridge("changeWeapon"),
 	damageEntity = BridgeNet.CreateBridge("damageEntity"),
+	playEntitySound = BridgeNet.CreateBridge("playEntitySound"),
 }
 
 local combatHandler = {}
@@ -56,7 +57,47 @@ local animations = {
 			resouces.one_sword_verticalSlash2,
 		},
 	},
+	dual_wield = {
+		idle = resouces.one_sword_idle,
+		run = resouces.one_sword_run,
+		walk = resouces.one_sword_walk,
+		combo = {
+			resouces.one_sword_verticalSlash1,
+			resouces.one_sword_horizontalSlash,
+			resouces.one_sword_diagonalSlash,
+			resouces.one_sword_verticalSlash2,
+		},
+	},
 }
+
+local sounds = {
+	attack = {
+		resouces.sound_effects["sword 1"],
+		resouces.sound_effects["sword 2"]
+	},
+	hit = {
+		resouces.sound_effects["Sword Hit"]
+	}
+}
+
+
+local find = function<t>(id: t & number): typeof(weapons[t])
+	for _, data in pairs(weapons) do
+		if data.id == id then
+			return data
+		end
+	end
+	return nil
+end
+
+local playSound = function(id, parent)
+	local sound = sounds[id][math.random(1, #sounds[id])]:Clone()
+	sound.Parent = parent
+	sound:Play()
+	sound.Ended:Once(function()
+		sound:Destroy()
+	end)
+end
 
 function clientWeaponTable:equip()
 	self.humanoid = self.character:WaitForChild("Humanoid") :: Humanoid
@@ -94,6 +135,7 @@ function clientWeaponTable:activate()
 	local attackAnimation = self.animationsTracks.combo[self.combo]
 	attackAnimation:Play()
 	self.hitboxClass:HitStart()
+	playSound("attack", self.weapon.Handle)
 	self.comboExpired:lock()
 	self.basicAttackDebounce:lock(attackAnimation.Length)
 
@@ -173,15 +215,6 @@ local clientWeaponClass = objects.new(clientWeaponTable, {
 	character = t.instanceIsA("Model"),
 })
 
-local find = function<t>(id: t & number): typeof(weapons[t])
-	for _, data in pairs(weapons) do
-		if data.id == id then
-			return data
-		end
-	end
-	return nil
-end
-
 function new(id: number, weaponTool: Tool)
 	local data = find(id)
 
@@ -211,9 +244,21 @@ function combatHandler:load()
 		weapon:start()
 		weapon.hit:Connect(function(target)
 			if target.Parent:FindFirstChild("Humanoid") then
+				playSound("hit", target)
 				bridges.damageEntity:Fire(target.Parent, weapon.id, weapon.character.HumanoidRootPart.CFrame)
 				target.Parent.Humanoid:TakeDamage(weapon.data.baseDamage)
 			end
+		end)
+	end)
+	bridges.playEntitySound:Connect(function(part, sound)
+		if sound:FindFirstChild("pitch") then
+			sound.pitch = math.random(.9, 1.1)
+		end
+		sound = sound:Clone()
+		sound.Parent = part
+		sound:Play()
+		sound.Ended:Once(function()
+			sound:Destroy()
 		end)
 	end)
 end
