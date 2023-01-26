@@ -34,6 +34,7 @@ local entity = require(script.Parent.Parent.entities.entity)
 local bridges = {
 	changeWeapon = BridgeNet.CreateBridge("changeWeapon"),
 	damageEntity = BridgeNet.CreateBridge("damageEntity"),
+	playEntitySound = BridgeNet.CreateBridge("playEntitySound")
 }
 
 local find = function<t>(id: t & number): typeof(weapons[t])
@@ -54,7 +55,6 @@ local loadPlayerWeapon = function(player, id)
 	local weaponTool = data.model:Clone()
 
 	weaponTool.Parent = player.Character
-	
 
 	bridges.changeWeapon:FireTo(player, id, weaponTool)
 end
@@ -65,18 +65,19 @@ return {
 	preload = function()
 		bridges.changeWeapon:Connect(function(player)
 			local connection
-			player.CharacterAdded:Connect(function()
+			local connect = function(character)
 				if connection then
 					connection:Disconnect()
 				end
 				connection = player.Backpack.ChildAdded:Connect(function(object)
 					task.wait()
-					object.Parent = player.Character
+					object.Parent = character
 				end)
 				loadPlayerWeapon(player, 1)
-			end)
+			end
+			player.CharacterAdded:Connect(connect)
 			if player.Character then
-				loadPlayerWeapon(player, 1)
+				connect(player.Character)
 			end
 		end)
 		bridges.damageEntity:Connect(function(fromPlayer, target, weaponId, cframeOnhit)
@@ -103,7 +104,7 @@ return {
 					damageType = "crit"
 					damage *= multiplication
 				end
-
+				--bridges.playEntitySound:FireAllInRange(monster.rootpart.Position, 50, monster.rootpart, "hit")
 				monster:takeDamage(fromPlayer, damage, damageType, weaponData.knockback, cframeOnhit)
 			end
 			--target.Humanoid:TakeDamage(weaponData.baseDamage)

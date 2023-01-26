@@ -1,10 +1,11 @@
 --!strict
 --[[
-    FileName    > controls.lua
+    FileName    > collisionGroup.lua
     Author      > AveryArk
     Contact     > Twitter: https://twitter.com/averyark_
-    Created     > 09/12/2022
+    Created     > 01/01/2023
 --]]
+local PhysicsService = game:GetService("PhysicsService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local Players = game:GetService("Players")
@@ -24,6 +25,30 @@ local module = require(Astrax.module)
 local objects = require(Astrax.objects)
 local debugger = require(Astrax.debugger)
 
-local controls = {}
+local debounce = require(ReplicatedStorage.shared.debounce)
+local number = require(ReplicatedStorage.shared.number)
+local tween = require(ReplicatedStorage.shared.tween)
 
-return controls
+local registerPlayerCharacter = function(character)
+	for _, part in pairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CollisionGroup = "Player"
+		end
+	end
+	character.DescendantAdded:Connect(function(part)
+		if part:IsA("BasePart") then
+			part.CollisionGroup = "Player"
+		end
+	end)
+end
+
+return {
+	load = function()
+		Players.PlayerAdded:Connect(function(player)
+			player.CharacterAdded:Connect(registerPlayerCharacter)
+			if player.Character then
+				registerPlayerCharacter(player.Character)
+			end
+		end)
+	end,
+}

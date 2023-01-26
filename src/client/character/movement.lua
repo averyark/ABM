@@ -31,6 +31,20 @@ local tween = require(ReplicatedStorage.shared.tween)
 
 local movement = {}
 
+local fov
+local cacheTween
+
+local gameFolders = workspace.gameFolders
+local locking
+local resetTick
+local isSprinting = false
+
+local cacheTweenHighlighter
+
+local highlighter = ReplicatedStorage.resources.hightlight:Clone()
+
+highlighter.Parent = gameFolders
+
 local getHighest = function(...)
 	local highest = 0
 	for _, num in pairs({ ... }) do
@@ -41,9 +55,6 @@ local getHighest = function(...)
 	end
 	return highest
 end
-
-local fov
-local cacheTween
 
 local updateFieldOfView = function(newFov)
 	if fov == newFov then
@@ -72,13 +83,11 @@ local lockToObject = function(object)
 		alignOrientation.Enabled = false
 		return
 	end
-	alignOrientation.CFrame = CFrame.new(character.HumanoidRootPart.Position, object.Position)
+	local hrpPos = character.HumanoidRootPart.Position
+	local objPos = Vector3.new(object.Position.X, hrpPos.Y, object.Position.Z)
+	alignOrientation.CFrame = CFrame.new(hrpPos, objPos)
 	alignOrientation.Enabled = true
 end
-
-local locking
-local resetTick
-local isSprinting = false
 
 local lockTarget = function(target)
 	if isSprinting then
@@ -88,52 +97,50 @@ local lockTarget = function(target)
 		resetTick = os.clock() + 5
 		return
 	end
+	if cacheTweenHighlighter then
+		cacheTweenHighlighter:Destroy()
+	end
 	if locking then
-		local highlight = locking:FindFirstChild("TargetHighlight")
-		if highlight then
-			tween.instance(highlight.highlight.label, {
-				Size = UDim2.fromScale(0, 0),
-				ImageTransparency = 1,
-			})
-		end
+		cacheTweenHighlighter = tween.instance(highlighter.highlight.label, {
+			Size = UDim2.fromScale(0, 0),
+			ImageTransparency = 1,
+		}).Completed:Wait()
 	end
-	local highlight = target:FindFirstChild("TargetHighlight")
-	if highlight then
-		tween.instance(highlight.highlight.label, {
-			Size = UDim2.fromScale(1, 1),
-			ImageTransparency = 0,
-		})
-	end
+	cacheTweenHighlighter = tween.instance(highlighter.highlight.label, {
+		Size = UDim2.fromScale(1, 1),
+		ImageTransparency = 0,
+	})
+
+	cacheTweenHighlighter = tween.instance(highlighter.highlight.label, {
+		Size = UDim2.fromScale(1, 1),
+		ImageTransparency = 0,
+	})
 	resetTick = os.clock() + 5
 	locking = target
 end
 
 local unlockTarget = function(target)
-	if locking ~= target and target ~= nil then
+	if not target then
 		return
 	end
-	if locking then
-		local highlight = locking:FindFirstChild("TargetHighlight")
-		if highlight then
-			tween.instance(highlight.highlight.label, {
-				Size = UDim2.fromScale(0, 0),
-				ImageTransparency = 1,
-			})
-		end
+	cacheTweenHighlighter = tween.instance(highlighter.highlight.label, {
+		Size = UDim2.fromScale(0, 0),
+		ImageTransparency = 1,
+	})
+	if locking == target then
+		resetTick = nil
+		locking = nil
 	end
-	resetTick = nil
-	locking = nil
 end
 
 local sprinting = function(state)
 	isSprinting = state
 	if state then
-		print("sprinting; giving up target")
-		unlockTarget()
+		unlockTarget(locking)
+		resetTick = nil
+		locking = nil
 	end
 end
-
-local gameFolders = workspace.gameFolders
 
 function movement:load()
 	local entities = gameFolders.entities
@@ -161,23 +168,17 @@ function movement:load()
 							local m2 = (locking.HumanoidRootPart.Position - charPosition).Magnitude
 							if m1 < m2 then
 								lockTarget(rootpart.Parent)
-								--resetTick = nil
 							end
 						else
 							lockTarget(rootpart.Parent)
-							--resetTick = nil
 						end
 					else
-						unlockTarget(rootpart.Parent)
+						if locking == rootpart.Parent then
+							unlockTarget(rootpart.Parent)
+						end
 					end
 				end
 			end
-		end
-
-		if (resetTick and os.clock() > resetTick) or (not resetTick or not locking) then
-			--resetTick = nil
-			check()
-			--unlockTarget(locking)
 		end
 
 		if locking and not locking:FindFirstChild("HumanoidRootPart") then
@@ -188,14 +189,31 @@ function movement:load()
 			unlockTarget(locking)
 		end
 
+		if locking then
+			local rootpart = locking.HumanoidRootPart
+			local m1 = (rootpart.Position - charPosition).Magnitude
+			if m1 >= 20 then
+				unlockTarget(rootpart.Parent)
+			end
+		end
+
+		if (resetTick and os.clock() > resetTick) or (not resetTick or not locking) then
+			--resetTick = nil
+			check()
+			--unlockTarget(locking)
+		end
+
 		lockToObject(locking and locking:FindFirstChild("HumanoidRootPart"))
 
+		if locking and locking:FindFirstChild("TargetHighlight") then
+			highlighter.Position = locking.TargetHighlight.Position
+		end
+
 		if locking then
-			local highlight = locking:FindFirstChild("TargetHighlight")
-			if highlight.highlight.label.Rotation >= 360 then
-				highlight.highlight.label.Rotation = 0
+			if highlighter.highlight.label.Rotation >= 360 then
+				highlighter.highlight.label.Rotation = 0
 			end
-			highlight.highlight.label.Rotation += 30 * deltaTime
+			highlighter.highlight.label.Rotation += 30 * deltaTime
 		end
 	end)
 
@@ -206,7 +224,6 @@ function movement:load()
 	if player.Character then
 		character = player.Character
 	end
-
 end
 
 movement.sprinting = sprinting

@@ -5,6 +5,7 @@
     Contact     > Twitter: https://twitter.com/averyark_
     Created     > 06/12/2022
 --]]
+local PhysicsService = game:GetService("PhysicsService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local Players = game:GetService("Players")
@@ -42,6 +43,16 @@ local bridges = {
 	requestEntityAnimationIds = BridgeNet.CreateBridge("requestEntityAnimationIds"),
 	entityDamaged = BridgeNet.CreateBridge("entityDamaged"),
 	entityDied = BridgeNet.CreateBridge("entityDied"),
+	playEntitySound = BridgeNet.CreateBridge("playEntitySound"),
+}
+
+local resources = ReplicatedStorage.resources.combat_resources
+local sounds = {
+	punch = {
+		resources.sound_effects.punch1,
+		resources.sound_effects["punch 2"]
+	},
+	punchHit = resources.sound_effects["punch hit"]
 }
 
 local states = {
@@ -55,6 +66,23 @@ local states = {
 local resetPathFindingRate = 10 / 30
 
 local hugeVector = Vector3.new(1, 1, 1) * math.huge
+
+local ap = workspace.AnimationProvider
+local animationCache = {}
+local getAnimationLength = function(animationId)
+	if animationCache[animationId] and animationCache[animationId] ~= 0 then
+		return animationCache[animationId]
+	end
+	local animation = Instance.new("Animation")
+	animation.AnimationId = animationId
+	local track = ap.Humanoid.Animator:LoadAnimation(animation)
+
+	animationCache[animationId] = track.Length
+
+	track:Destroy()
+
+	return track.Length
+end
 
 function entity:attack()
 	if self.attackDebounce:isLocked() then
@@ -78,8 +106,9 @@ function entity:attack()
 
 	local num = math.random(1, #self.data.animations.AttackAnimations)
 	self:replicateAnimationToClient("Play", "AttackAnimations", num)
+	bridges.playEntitySound:FireAllInRange(self.rootpart.Position, 30, self.rootpart, sounds.punch[num])
 
-	debugger.log(self._attackAnimationLengths)
+	self._attackAnimationLengths[num] = getAnimationLength(self.data.animations.AttackAnimations[num])
 
 	task.wait(self._attackAnimationLengths[num])
 	self.attackDebounce:lock()
@@ -98,29 +127,50 @@ function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
 		bodyVelocity.P = 1000
 		bodyVelocity.Velocity = Vector3.new(
 			playerCFrame.lookVector.X * knockback,
-			knockback * 0.7,
+			knockback,
 			playerCFrame.lookVector.Z * knockback
 		)
 		local num = math.random(1, #self.data.animations.KnockbackAnimation)
 		self:replicateAnimationToClient("Play", "KnockbackAnimation", num)
 		self._canUpdateState = false
+		self.humanoid.WalkSpeed = 0
 		task.wait(0.1)
 		bodyVelocity:Destroy()
+		task.wait(knockback / 50)
+
+		self.humanoid.WalkSpeed = self.data.walkSpeed
+		if self.target or self.movingLocation then
+			self.pathfinding:Run(self.movingLocation or self.target.HumanoidRootPart)
+			self.resetPathFindingDebounce:lock()
+		else
+			if self.pathfinding._status ~= "Idle" then
+				self.pathfinding:Stop()
+			end
+		end
 		self._canUpdateState = true
 	end
+	if not self.target then
+		self:changeTarget(player.Character)
+	end
+	self.lastAttacker = player
 	self.entity.Humanoid:TakeDamage(damage)
 	bridges.entityDamaged:FireAllInRange(self.rootpart.Position, 100, self.entity, player, damage, damageType)
 end
 
 function entity:playerHit(player)
-	if table.find(self._damagedPlayers, player) then
-		return
+	if self.state == states.attacking then
+		if table.find(self._damagedPlayers, player) then
+			return
+		end
+		table.insert(self._damagedPlayers, player)
+		self.onPlayerHit:Fire(player)
 	end
-	table.insert(self._damagedPlayers, player)
-	self.onPlayerHit:Fire(player)
 end
 
 function entity:changeTarget(target)
+	if not self._canUpdateState then
+		return
+	end
 	if target == nil then
 		self.target = nil
 		if self.pathfinding._status ~= "Idle" then
@@ -136,7 +186,7 @@ function entity:changeTarget(target)
 	else
 		return
 	end
-
+	self.movingLocation = nil
 	self.resetPathFindingDebounce:lock()
 	self.pathfinding:Run(self.target.HumanoidRootPart)
 end
@@ -189,6 +239,14 @@ function entity:isValidTarget(character)
 	return true
 end
 
+function entity:moveTo(position: Vector3)
+	if not self._canUpdateState then
+		return
+	end
+	self.movingLocation = position
+	self.pathfinding:Run(position)
+end
+
 function entity:idle()
 	if not self._canUpdateState then
 		return
@@ -198,24 +256,7 @@ function entity:idle()
 	self:replicateAnimationToClient("Play", "IdleAnimation")
 end
 
-local tester = ServerStorage.AnimationProvider.Humanoid.Animator
-local animationCache = {}
-
-local getAnimationLength = function(animationId)
-	if animationCache[animationId] then return animationCache[animationId] end
-	local animation = Instance.new("Animation")
-	animation.AnimationId = animationId
-	local track = tester:LoadAnimation(animation)
-	local length = track.Length
-
-	animationCache[animationId] = length
-
-	track:Destroy()
-
-	return length
-end
-
-function entity:spawn()
+function entity:spawn(spawnCFrame: CFrame)
 	self.entity.Parent = workspace.gameFolders.entities
 	self.humanoid = self.entity:WaitForChild("Humanoid")
 	self.animator = self.humanoid:WaitForChild("Animator")
@@ -223,9 +264,20 @@ function entity:spawn()
 	self.hitbox = self.entity:WaitForChild("Damagebox")
 	self.head = self.entity:WaitForChild("Head")
 
-	for i, animationId in pairs(self.data.animations.AttackAnimations) do
-		self._attackAnimationLengths[i] = getAnimationLength(animationId)
+	self.rootpart.CFrame = spawnCFrame
+	self._spawnCFrame = spawnCFrame
+
+	for _, part in pairs(self.entity:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CollisionGroup = "Entity"
+		end
 	end
+
+	self._maid:Add(self.entity.DescendantAdded:Connect(function(part)
+		if part:IsA("BasePart") then
+			part.CollisionGroup = "Entity"
+		end
+	end))
 
 	for _, signal in pairs(self) do
 		if Signal.Is(signal) then
@@ -236,8 +288,10 @@ function entity:spawn()
 	self._maid:Add(self.entity)
 	self._maid:Add(self.humanoid.Running:Connect(function(speed)
 		if speed > 1 then
+			self.gyro.Parent = nil
 			self.state = states.moving
 		else
+			self.gyro.Parent = self.rootpart
 			if not self._canUpdateState then
 				return
 			end
@@ -252,11 +306,11 @@ function entity:spawn()
 
 	-- pathfinding
 	local pathfinding = SimplePath.new(self.entity, self.data.agentParameter, { JUMP_WHEN_STUCK = false })
-	pathfinding.Visualize = true
+	pathfinding.Visualize = false
 
 	self._maid:Add(pathfinding.Blocked:Connect(function()
-		if self.target then
-			pathfinding:Run(self.target.HumanoidRootPart)
+		if self.target or self.movingLocation then
+			pathfinding:Run(self.movingLocation or self.target.HumanoidRootPart)
 			self.resetPathFindingDebounce:lock()
 		end
 	end))
@@ -267,8 +321,8 @@ function entity:spawn()
 		--self:debugwarn(errorType)
 		--debugger.warn("OBJECT WARN [<" .. tostring(self) .. ">(pathfinding)]" .. " pathfindingError:", errorType)
 		task.wait(0.2)
-		if self.target then
-			pathfinding:Run(self.target.HumanoidRootPart)
+		if self.target or self.movingLocation then
+			pathfinding:Run(self.movingLocation or self.target.HumanoidRootPart)
 			self.resetPathFindingDebounce:lock()
 		else
 			if self.pathfinding._status ~= "Idle" then
@@ -277,14 +331,17 @@ function entity:spawn()
 		end
 	end))
 	self._maid:Add(pathfinding.WaypointReached:Connect(function()
-		if not self.target then
+		if not self._canUpdateState then
 			return
 		end
-		pathfinding:Run(self.target.HumanoidRootPart)
+		if not self.target and not self.movingLocation then
+			return
+		end
+		pathfinding:Run(self.movingLocation or self.target.HumanoidRootPart)
 		self.resetPathFindingDebounce:lock()
 	end))
 	self._maid:Add(self.humanoid.Died:Connect(function()
-		self.onDeath:Fire()
+		self.onDeath:Fire(self.lastAttacker)
 	end))
 	if self.target then
 		pathfinding:Run(self.target.HumanoidRootPart)
@@ -293,7 +350,13 @@ function entity:spawn()
 
 	self.pathfinding = pathfinding
 
-	--Promise.try(entityTag.new, self)
+	local gyro = Instance.new("BodyGyro")
+	gyro.D = 150
+	gyro.P = 4000
+	gyro.MaxTorque = Vector3.new(0, 10000, 0)
+	gyro.Parent = nil
+
+	self.gyro = gyro
 
 	self:debug("Spawned entity", self.data.name, " to the world")
 
@@ -330,7 +393,7 @@ local find = function<t>(id: t & number): typeof(entities[t])
 	return nil
 end
 
-local new = function(id: number, spawnPositon: Vector3)
+local new = function(id: number)
 	local data = find(id)
 
 	debugger.assert(data, "Provided id does not correlate to any entity in the database: " .. id)
@@ -359,19 +422,25 @@ local new = function(id: number, spawnPositon: Vector3)
 		_attackAnimationLengths = {},
 		_canUpdateState = true,
 		_damagedPlayers = {},
-		_spawnPosition = spawnPositon,
 	})
 end
 
 local monsters = {}
 
-entityModule.new = function(id)
-	Promise.try(function()
+local droppedEntityHandler = require(script.Parent.droppedEntityHandler)
+
+entityModule.new = function(id: number, cf: CFrame)
+	debugger.assert(t.integer(id))
+	debugger.assert(t.CFrame(cf))
+	debugger.assert(t.table(find(id)))
+
+	return Promise.try(function()
 		local monster = new(id)
 		monster.onSpawn:Connect(function()
 			table.insert(monsters, monster)
 		end)
 		monster.onPlayerHit:Connect(function(player)
+			bridges.playEntitySound:FireAllInRange(monster.rootpart.Position, 30, player.Character.HumanoidRootPart, sounds.punchHit)
 			player.Character.Humanoid:TakeDamage(monster.data.baseDamage)
 		end)
 		monster.onAttackBegin:Connect(function()
@@ -387,15 +456,39 @@ entityModule.new = function(id)
 			end
 			monster:changeTarget(player.Character)
 		end)
-		monster.onDeath:Connect(function()
+		monster.onDeath:Connect(function(killer)
+			droppedEntityHandler.bulk(killer, "coin", 20, 10, monster.entity.HumanoidRootPart.Position)
+			droppedEntityHandler.one(killer, "weapon/25", 1, monster.entity.HumanoidRootPart.Position)
 			monster.entity.HumanoidRootPart.Anchored = true
+			for _, object in pairs(monster.entity:GetDescendants()) do
+				if object:IsA("BasePart") then
+					object.CanCollide = false
+				end
+			end
 			bridges.entityDied:FireAllInRange(monster.rootpart.Position, 100, monster.entity)
 			task.wait(1)
 			table.remove(monsters, table.find(monsters, monster))
 			monster:Destroy()
 		end)
-		monster:spawn()
+		monster:spawn(cf)
+
+		monster.hitbox.Touched:Connect(function(touchPart)
+			if monster.canDamage then
+				local player = Players:GetPlayerFromCharacter(touchPart.Parent)
+					or Players:GetPlayerFromCharacter(touchPart.Parent.Parent)
+				if not player then
+					return
+				end
+				monster:playerHit(player)
+			end
+		end)
+
+		return monster
 	end)
+		:catch(function(...)
+			debugger.warn(...)
+		end)
+		:expect()
 end
 
 entityModule.getMonster = function(model)
@@ -449,6 +542,15 @@ function entityModule:load()
 				end
 			end
 
+			if monsterEntity.target then
+				local rootpartPosition = monsterEntity.target.HumanoidRootPart.Position
+				local playerDistanceFromEntitySpawn = (rootpartPosition - monsterEntity._spawnCFrame.Position).Magnitude
+
+				if playerDistanceFromEntitySpawn > monsterEntity.data.maximumDistanceFromSpawn then
+					monsterEntity:changeTarget(nil)
+				end
+			end
+
 			for _, player in pairs(Players:GetPlayers()) do
 				local character = player.Character
 				if not character or not character:FindFirstChild("HumanoidRootPart") then
@@ -457,9 +559,17 @@ function entityModule:load()
 				table.insert(validCharacters, character)
 
 				local rootpartPosition = player.Character.HumanoidRootPart.Position
+				-- Determine if the target is inside of the detection range (relative to spawnPosition of the entity)
+				local playerDistanceFromEntitySpawn = (rootpartPosition - monsterEntity._spawnCFrame.Position).Magnitude
+
+				if playerDistanceFromEntitySpawn > monsterEntity.data.maximumDistanceFromSpawn then
+					continue
+				end
+
 				-- Determine if the target is within attack range, otherwise, check if the player is within visual distance
 				local vector = rootpartPosition - monsterEntity.rootpart.Position
-				local magnitude = (vector).Magnitude
+				local magnitude = vector.Magnitude
+
 				if magnitude < monsterEntity.data.rangeOfAttack then
 					if monsterEntity.pathfinding._status ~= "Idle" then
 						monsterEntity.pathfinding:Stop()
@@ -481,22 +591,16 @@ function entityModule:load()
 						monsterEntity:playerInView(player)
 					end
 				end
+				if monsterEntity.gyro.Parent ~= nil and monsterEntity.target then
+					monsterEntity.gyro.CFrame = CFrame.lookAt(
+						monsterEntity.rootpart.Position,
+						monsterEntity.target.HumanoidRootPart.Position
+					)
+				end
 			end
 
-			if monsterEntity.canDamage then
-				overlap.FilterDescendantsInstances = validCharacters
-
-				local hitbox = monsterEntity.hitbox
-				local overlaps = workspace:GetPartBoundsInBox(hitbox.CFrame, hitbox.Size, overlap)
-
-				for _, characterHit in pairs(overlaps) do
-					local player = Players:GetPlayerFromCharacter(characterHit.Parent)
-						or Players:GetPlayerFromCharacter(characterHit.Parent.Parent)
-					if not player then
-						continue
-					end
-					monsterEntity:playerHit(player)
-				end
+			if not monsterEntity.target and not monsterEntity.movingLocation then
+				task.spawn(monsterEntity.moveTo, monsterEntity, monsterEntity._spawnCFrame.Position)
 			end
 		end
 	end)
