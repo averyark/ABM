@@ -171,7 +171,7 @@ local initializeCharacter = function(character)
 	local player = Players.LocalPlayer
 	local humanoid = character:WaitForChild("Humanoid")
 
-	maxJumps = 3
+	maxJumps = 2
 	jumps = maxJumps
 
 	humanoid.StateChanged:Connect(function(old, new)

@@ -5,326 +5,417 @@ return {
 		id = 1,
 		model = ReplicatedStorage.items.weapons["Amenoma Kageuchi"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 4,
+		zone = 1,
+		iconId = "rbxassetid://12182177435",
+
+		power = 2430,
+		coin = 24300,
 		baseDamage = 100,
-		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critChance = 0.3,
+		critMultiplication = { 2, 2.8 },
+		knockback = 24,
 		basicAttackCooldown = 0.05,
-	},	["Aquila Favonia"] = {
+	},
+	["Aquila Favonia"] = {
 		name = "Aquila Favonia",
 		id = 2,
 		model = ReplicatedStorage.items.weapons["Aquila Favonia"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 3,
+		zone = 2,
+		iconId = "rbxassetid://12182192788",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Bakufu"] = {
+	},
+	["Bakufu"] = {
 		name = "Bakufu",
 		id = 3,
 		model = ReplicatedStorage.items.weapons["Bakufu"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 4,
+		zone = 5,
+		iconId = "rbxassetid://12192115685",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Blackcliff Longsword"] = {
+	},
+	["Blackcliff Longsword"] = {
 		name = "Blackcliff Longsword",
 		id = 4,
 		model = ReplicatedStorage.items.weapons["Blackcliff Longsword"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 5,
+		iconId = "rbxassetid://12192183094",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Boreas"] = {
+	},
+	["Boreas"] = {
 		name = "Boreas",
 		id = 5,
 		model = ReplicatedStorage.items.weapons["Boreas"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 3,
+		zone = 4,
+		iconId = "rbxassetid://12192107100",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Cool Steel"] = {
+	},
+	["Cool Steel"] = {
 		name = "Cool Steel",
 		id = 6,
 		model = ReplicatedStorage.items.weapons["Cool Steel"],
 		class = "single_wield",
 		rarity = 1,
-	
+		zone = 3,
+		iconId = "rbxassetid://12191718361",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Dark Iron Sword"] = {
+	},
+	["Dark Iron Sword"] = {
 		name = "Dark Iron Sword",
 		id = 7,
 		model = ReplicatedStorage.items.weapons["Dark Iron Sword"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 3,
+		zone = 1,
+		iconId = "rbxassetid://12310931241",
+
+		power = 440,
+		coin = 8100,
 		baseDamage = 100,
-		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critChance = 0.4,
+		critMultiplication = { 1.8, 2.6 },
+		knockback = 17,
 		basicAttackCooldown = 0.05,
-	},	["Dull Blade"] = {
+	},
+	["Dull Blade"] = {
 		name = "Dull Blade",
 		id = 8,
 		model = ReplicatedStorage.items.weapons["Dull Blade"],
 		class = "single_wield",
 		rarity = 1,
-	
+		zone = 1,
+		iconId = "rbxassetid://12191690446",
+
+		power = 67,
+		coin = 900,
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		knockback = 7,
 		basicAttackCooldown = 0.05,
-	},	["Festering Desire"] = {
+	},
+	["Festering Desire"] = {
 		name = "Festering Desire",
 		id = 9,
 		model = ReplicatedStorage.items.weapons["Festering Desire"],
 		class = "single_wield",
 		rarity = 1,
-	
+		zone = 3,
+		iconId = "rbxassetid://12191718588",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Fillet Blade"] = {
-		name = "Fillet Blade",
+	},
+	["Filet Blade"] = {
+		name = "Filet Blade",
 		id = 10,
-		model = ReplicatedStorage.items.weapons["Fillet Blade"],
+		model = ReplicatedStorage.items.weapons["Filet Blade"],
 		class = "single_wield",
 		rarity = 1,
-	
+		zone = 2,
+		iconId = "rbxassetid://12182177164",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Freedom Sworn"] = {
+	},
+	["Freedom Sworn"] = {
 		name = "Freedom Sworn",
 		id = 11,
 		model = ReplicatedStorage.items.weapons["Freedom Sworn"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 4,
+		zone = 4,
+		iconId = "rbxassetid://12192106910",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Harbinger Of Dawn"] = {
+	},
+	["Harbinger Of Dawn"] = {
 		name = "Harbinger Of Dawn",
 		id = 12,
 		model = ReplicatedStorage.items.weapons["Harbinger Of Dawn"],
 		class = "single_wield",
 		rarity = 1,
-	
+		zone = 2,
+		iconId = "rbxassetid://12182193155",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Iron Sting"] = {
+	},
+	["Iron Sting"] = {
 		name = "Iron Sting",
 		id = 13,
 		model = ReplicatedStorage.items.weapons["Iron Sting"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 2,
+		zone = 2,
+		iconId = "rbxassetid://12182192991",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Katana"] = {
+	},
+	["Katana"] = {
 		name = "Katana",
 		id = 14,
 		model = ReplicatedStorage.items.weapons["Katana"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 2,
+		zone = 3,
+		iconId = "rbxassetid://12191718937",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Lions Roar"] = {
+	},
+	["Lions Roar"] = {
 		name = "Lions Roar",
 		id = 15,
 		model = ReplicatedStorage.items.weapons["Lions Roar"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 2,
+		zone = 5,
+		iconId = "rbxassetid://12192114635",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Mistsplitter Reforged"] = {
+	},
+	["Mistsplitter Reforged"] = {
 		name = "Mistsplitter Reforged",
 		id = 16,
 		model = ReplicatedStorage.items.weapons["Mistsplitter Reforged"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 3,
+		zone = 3,
+		iconId = "rbxassetid://12191719599",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Narukami"] = {
+	},
+	["Narukami"] = {
 		name = "Narukami",
 		id = 17,
 		model = ReplicatedStorage.items.weapons["Narukami"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 4,
+		zone = 3,
+		iconId = "rbxassetid://12191719232",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Norse"] = {
+	},
+	["Norse"] = {
 		name = "Norse",
 		id = 18,
 		model = ReplicatedStorage.items.weapons["Norse"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 2,
+		zone = 1,
+		iconId = "rbxassetid://12182177684",
+
+		power = 240,
+		coin = 90,
 		baseDamage = 100,
-		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critChance = 0.3,
+		critMultiplication = { 1.5, 2.3 },
+		knockback = 12,
 		basicAttackCooldown = 0.05,
-	},	["Royal Filet Blade"] = {
+	},
+	["Royal Filet Blade"] = {
 		name = "Royal Filet Blade",
 		id = 19,
 		model = ReplicatedStorage.items.weapons["Royal Filet Blade"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 3,
+		zone = 5,
+		iconId = "rbxassetid://12192114864",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Royal Longsword"] = {
+	},
+	["Royal Longsword"] = {
 		name = "Royal Longsword",
 		id = 20,
 		model = ReplicatedStorage.items.weapons["Royal Longsword"],
 		class = "single_wield",
 		rarity = 1,
-	
+		zone = 4,
+		iconId = "rbxassetid://12192107865",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Skyward Blade"] = {
+	},
+	["Skyward Blade"] = {
 		name = "Skyward Blade",
 		id = 21,
 		model = ReplicatedStorage.items.weapons["Skyward Blade"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 2,
+		zone = 4,
+		iconId = "rbxassetid://12192107567",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Summit Shaper"] = {
+	},
+	["Summit Shaper"] = {
 		name = "Summit Shaper",
 		id = 22,
 		model = ReplicatedStorage.items.weapons["Summit Shaper"],
 		class = "single_wield",
-		rarity = 1,
-	
+		rarity = 4,
+		zone = 2,
+		iconId = "rbxassetid://12182192661",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Sword Of Descension"] = {
+	},
+	["Sword Of Descension"] = {
 		name = "Sword Of Descension",
 		id = 23,
 		model = ReplicatedStorage.items.weapons["Sword Of Descension"],
 		class = "single_wield",
 		rarity = 1,
-	
+		zone = 4,
+		iconId = "rbxassetid://12192107276",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["The Black Sword"] = {
+	},
+	["The Black Sword"] = {
 		name = "The Black Sword",
 		id = 24,
 		model = ReplicatedStorage.items.weapons["The Black Sword"],
 		class = "single_wield",
 		rarity = 1,
-		iconId = "rbxassetid://12192183094",
-	
+		zone = 5,
+		iconId = "rbxassetid://12192115315",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Transcend"] = {
+	},
+	["Transcend"] = {
 		name = "Transcend",
 		id = 25,
 		model = ReplicatedStorage.items.weapons["Transcend"],
 		class = "single_wield",
-		rarity = 2,
+		rarity = 5,
 		iconId = "rbxassetid://12192182840",
-	
+
+		special = {
+			{id = 1},
+		},
+		power = 120000,
+		coin = 50000,
 		baseDamage = 100,
-		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critChance = 0.5,
+		critMultiplication = { 2, 4 },
+		knockback = 80,
 		basicAttackCooldown = 0.05,
-	},	["Traveler'S Handy Sword"] = {
-		name = "Traveler'S Handy Sword",
+	},
+	["Traveler's Handy Sword"] = {
+		name = "Traveler's Handy Sword",
 		id = 26,
-		model = ReplicatedStorage.items.weapons["Traveler'S Handy Sword"],
+		model = ReplicatedStorage.items.weapons["Traveler's Handy Sword"],
 		class = "single_wield",
 		rarity = 1,
-	
+		zone = 5,
+		iconId = "rbxassetid://12192115109",
+
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
-	},	["Wooden"] = {
+	},
+	["Wooden"] = {
 		name = "Wooden",
 		id = 27,
 		model = ReplicatedStorage.items.weapons["Wooden"],
 		class = "single_wield",
 		rarity = 1,
-	
+		zone = 1,
+		iconId = "rbxassetid://12182177875",
+
+		power = 25,
+		coin = 10,
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		knockback = 5,
 		basicAttackCooldown = 0.05,
-	}
+	},
 }

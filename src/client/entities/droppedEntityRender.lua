@@ -30,6 +30,7 @@ local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local weapons = require(ReplicatedStorage.shared.weapons)
+local rarities = require(ReplicatedStorage.shared.rarities)
 
 local player = Players.LocalPlayer
 local entityTemplate = ReplicatedStorage.resources.droppedEntity
@@ -51,16 +52,22 @@ local droppedEntityClass = {
 }
 
 local bridges = {
-	collectDroppedEntity = BridgeNet.CreateBridge("collectDroppedEntity")
+	collectDroppedEntity = BridgeNet.CreateBridge("collectDroppedEntity"),
 }
 
 local icons = {
 	coin = "rbxassetid://11895034615",
+	xp = "rbxassetid://12688067279"
+}
+
+local color = {
+	xp = Color3.fromRGB(255, 186, 102),
+	coin = Color3.fromRGB(255, 255, 255)
 }
 
 droppedEntityClass.__index = droppedEntityClass
 
-local find = function(id)
+local find = function(id) : typeof(weapons["Katana"])
 	for _, data in pairs(weapons) do
 		if data.id == tonumber(id) then
 			return data
@@ -74,6 +81,13 @@ function droppedEntityClass:render()
 
 	self.object = entityTemplate:Clone()
 	self.object.orb.icon.Image = if data then data.iconId else icons[rType]
+	self.object.orb.shine.ImageColor3 =
+		if data then
+			rarities[data.rarity].primaryColor
+		elseif color[rType] then
+			color[rType]
+		else
+			Color3.fromRGB(255, 255, 255)
 
 	self.object.Name = self.id
 	self.object.Position = self.pos
@@ -153,7 +167,10 @@ function droppedEntityClass:collect()
 
 		local expire
 		expire = function(billboard)
-			if lastCollectedBillboardUpdate[self.type] and os.clock() - lastCollectedBillboardUpdate[self.type] <= 2 then
+			if
+				lastCollectedBillboardUpdate[self.type]
+				and os.clock() - lastCollectedBillboardUpdate[self.type] <= 2
+			then
 				task.wait(2)
 				expire(billboard)
 				return
@@ -177,7 +194,8 @@ function droppedEntityClass:collect()
 
 		if collectedBillboard[self.type] then
 			local billboard = collectedBillboard[self.type]
-			billboard.orb.label.Text = tonumber(billboard.orb.label.Text) + amount
+			billboard:SetAttribute("rawValue", billboard:GetAttribute("rawValue") + amount)
+			billboard.orb.label.Text = number.abbreviate(billboard:GetAttribute("rawValue"))
 			billboard.Position = reachPosition
 			lastCollectedBillboardUpdate[self.type] = os.clock()
 			billboard.orb.ExtentsOffset = Vector3.new(0, 0, 0)
@@ -197,8 +215,9 @@ function droppedEntityClass:collect()
 			end
 
 			billboard.orb.icon.Image = if data then data.iconId else icons[rType]
-			billboard.orb.label.Text = amount
-			
+			billboard.orb.label.Text = number.abbreviate(amount)
+			billboard:SetAttribute("rawValue", amount)
+
 			billboard.Position = reachPosition
 			billboard.Parent = workspace.gameFolders.droppedCurrencies
 
@@ -245,19 +264,25 @@ local droppedEntityObject = objects.new(droppedEntityClass, {
 	collected = t.boolean,
 })
 
-local new =
-	function(type: string, droppedEntityId: string, droppedEntityPos: Vector3, amount: number, droppedEntityDispensePower: Vector3, droppedEntityExpireInterval: number)
-		return droppedEntityObject:new({
-			type = type,
-			id = droppedEntityId,
-			pos = droppedEntityPos,
-			dispensePower = droppedEntityDispensePower,
-			expireInterval = droppedEntityExpireInterval,
-			amount = amount,
+local new = function(
+	type: string,
+	droppedEntityId: string,
+	droppedEntityPos: Vector3,
+	amount: number,
+	droppedEntityDispensePower: Vector3,
+	droppedEntityExpireInterval: number
+)
+	return droppedEntityObject:new({
+		type = type,
+		id = droppedEntityId,
+		pos = droppedEntityPos,
+		dispensePower = droppedEntityDispensePower,
+		expireInterval = droppedEntityExpireInterval,
+		amount = amount,
 
-			collected = false,
-		})
-	end
+		collected = false,
+	})
+end
 
 return {
 	new = new,

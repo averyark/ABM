@@ -32,17 +32,11 @@ local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 local itemClass = {}
 itemClass.__index = itemClass
 
-function itemClass:delete()
-    
-end
+function itemClass:delete() end
 
-function itemClass:interact()
-    
-end
+function itemClass:interact() end
 
-function itemClass:Destroy()
-    
-end
+function itemClass:Destroy() end
 
 local itemObject = objects.new(itemClass)
 

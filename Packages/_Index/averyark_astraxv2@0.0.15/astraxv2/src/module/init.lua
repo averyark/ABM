@@ -46,27 +46,19 @@ local loadDescendants = function(ancestry: Instance)
 	local promises = {}
 	local modules = {}
 
-	local resolved = 0
-
 	for _, object in pairs(ancestry:GetDescendants()) do
-		if t.instanceIsA("ModuleScript")(object) then
+		if t.instanceIsA("ModuleScript") then
 			table.insert(
 				promises,
 				Promise.new(function(resolve, reject)
 					modules[object] = require(object)
-					resolved += 1
 					resolve()
-				end):catch(function(err)
-					warn(object, err)
 				end)
 			)
 		end
 	end
 
-	repeat
-		task.wait()
-	until #promises == resolved
-
+	Promise.all(promises):awaitStatus()
 	table.clear(promises)
 
 	local isServer = RunService:IsServer()

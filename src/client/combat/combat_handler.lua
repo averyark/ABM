@@ -73,13 +73,12 @@ local animations = {
 local sounds = {
 	attack = {
 		resouces.sound_effects["sword 1"],
-		resouces.sound_effects["sword 2"]
+		resouces.sound_effects["sword 2"],
 	},
 	hit = {
-		resouces.sound_effects["Sword Hit"]
-	}
+		resouces.sound_effects["Sword Hit"],
+	},
 }
-
 
 local find = function<t>(id: t & number): typeof(weapons[t])
 	for _, data in pairs(weapons) do
@@ -98,6 +97,8 @@ local playSound = function(id, parent)
 		sound:Destroy()
 	end)
 end
+
+local attackSpeed = 0.2
 
 function clientWeaponTable:equip()
 	self.humanoid = self.character:WaitForChild("Humanoid") :: Humanoid
@@ -133,11 +134,19 @@ function clientWeaponTable:activate()
 	sprint.usingWeapon(true)
 
 	local attackAnimation = self.animationsTracks.combo[self.combo]
+	local multi = attackSpeed/attackAnimation.Length
+	attackAnimation:AdjustSpeed(multi)
+	
 	attackAnimation:Play()
 	self.hitboxClass:HitStart()
-	playSound("attack", self.weapon.Handle)
+
+	self.weapon.Handle.AttackTrail.Enabled = true
 	self.comboExpired:lock()
-	self.basicAttackDebounce:lock(attackAnimation.Length)
+	self.basicAttackDebounce:lock(attackSpeed)
+
+	task.delay(attackSpeed/2, function()
+		playSound("attack", self.weapon.Handle)
+	end)
 
 	self.basicAttackIncrements += 1
 
@@ -147,6 +156,7 @@ function clientWeaponTable:activate()
 		if self.basicAttackIncrements ~= cacheattackid then
 			return
 		end
+		self.weapon.Handle.AttackTrail.Enabled = false
 		sprint.usingWeapon(false)
 		self.hitboxClass:HitStop()
 		task.wait(0.3)
@@ -161,7 +171,7 @@ function clientWeaponTable:start()
 	self.hitboxClass.RaycastParams = RaycastParams.new()
 	self.hitboxClass.RaycastParams.FilterType = Enum.RaycastFilterType.Whitelist
 	self.hitboxClass.RaycastParams.FilterDescendantsInstances = { workspace.gameFolders.entities }
-	self.hitboxClass.Visualizer = true
+	self.hitboxClass.Visualizer = false
 	self._maid:Add(self.weapon.Equipped:Connect(function()
 		self:equip()
 	end))
@@ -245,14 +255,13 @@ function combatHandler:load()
 		weapon.hit:Connect(function(target)
 			if target.Parent:FindFirstChild("Humanoid") then
 				playSound("hit", target)
-				bridges.damageEntity:Fire(target.Parent, weapon.id, weapon.character.HumanoidRootPart.CFrame)
-				target.Parent.Humanoid:TakeDamage(weapon.data.baseDamage)
+				bridges.damageEntity:Fire(target.Parent, weapon.character.HumanoidRootPart.CFrame)
 			end
 		end)
 	end)
 	bridges.playEntitySound:Connect(function(part, sound)
 		if sound:FindFirstChild("pitch") then
-			sound.pitch = math.random(.9, 1.1)
+			sound.pitch = math.random(0.9, 1.1)
 		end
 		sound = sound:Clone()
 		sound.Parent = part

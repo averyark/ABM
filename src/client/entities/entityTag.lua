@@ -40,9 +40,10 @@ local new = function(entity)
 	tag.Parent = entity.HumanoidRootPart
 	tag.ExtentsOffsetWorldSpace = defaultOffset
 
-	local updateHealth = function()
+	local updateHealth = function(health)
 		local humanoid = entity.Humanoid
 		local healthContainer = tag.health.container
+
 		local percent = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
 		healthContainer.number.Text = number.abbreviate(math.max(humanoid.Health, 0), 2)
 			.. "/"
@@ -62,7 +63,7 @@ local new = function(entity)
 		}, 0.9)
 	end
 
-	updateHealth()
+	updateHealth(entity.Humanoid.Health)
 	local connection = entity.Humanoid.HealthChanged:Connect(updateHealth)
 	local connection2
 	connection2 = entity.AncestryChanged:Connect(function()

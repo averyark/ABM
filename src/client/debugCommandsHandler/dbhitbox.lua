@@ -27,6 +27,15 @@ local renderEntitySelection = function(entity)
 	damageboxSelection.Parent = entity.Hitbox
 end
 
+task.spawn(function()
+	dump:Add(workspace.gameFolders.entities.ChildAdded:Connect(function(child)
+		renderEntitySelection(child)
+	end))
+	for _, child in pairs(workspace.gameFolders.entities:GetChildren()) do
+		renderEntitySelection(child)
+	end
+end)
+
 return {
 	commandInvoked = function(arguments, index)
 		local debugger = require(index.debugger)

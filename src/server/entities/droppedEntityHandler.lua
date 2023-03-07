@@ -39,7 +39,7 @@ local indexes = {}
 
 local bridges = {
 	makeDroppedEntity = BridgeNet.CreateBridge("makeDroppedEntity"),
-	collectDroppedEntity = BridgeNet.CreateBridge("collectDroppedEntity")
+	collectDroppedEntity = BridgeNet.CreateBridge("collectDroppedEntity"),
 }
 
 local droppedEntityClass = {
@@ -92,13 +92,24 @@ function droppedEntityClass:collect()
 		playerDataHandler.getPlayer(self.ownership):apply(function(f)
 			f.data.coins += self.amount
 		end)
+	elseif rType == "xp" then
+		playerDataHandler.getPlayer(self.ownership):apply(function(f)
+			print("added " .. self.amount)
+			f.data.xp += self.amount
+		end)
 	elseif rType == "weapon" then
 		local itemData = findItem(id)
-		
+
 		playerDataHandler.getPlayer(self.ownership):apply(function(f)
-			table.insert(f.data.inventory.weapon, itemData.id)
 			table.insert(f.data.stats.obtainedItemIndex.weapon, itemData.id)
-			print("test", playerDataHandler.getPlayer(self.ownership).data)
+			f.data.stats.itemsObtained.weapon += 1
+			table.insert(f.data.inventory.weapon, {
+				index = f.data.stats.itemsObtained.weapon,
+				id = itemData.id,
+				level = 0,
+			})
+
+			--print("test", playerDataHandler.getPlayer(self.ownership).data)
 		end)
 	end
 
@@ -119,32 +130,40 @@ local droppedEntityObject = objects.new(droppedEntityClass, {
 	expireInterval = t.union(t.none, t.number),
 })
 
-local new = function(player: Player, type: string, amount: number, position: Vector3, power: number?, expireInterval: number?)
-	return droppedEntityObject
-		:new({
-			id = HttpService:GenerateGUID(),
-			position = position,
-			power = power,
-			expireInterval = expireInterval,
-			ownership = player,
-			amount = amount,
-			type = type
-		})
-		:register()
-end
-
-local bulk =
-	function(player: Player, type: string, count: number, amount: number, position: Vector3, power: number?, expireInterval: number?)
-		debugger.assert(t.integer(count))
-		debugger.assert(t.integer(amount))
-		local list = {}
-
-		for i = 1, count do
-			table.insert(list, new(player, type, amount, position, power, expireInterval))
-		end
-
-		return list
+local new =
+	function(player: Player, type: string, amount: number, position: Vector3, power: number?, expireInterval: number?)
+		return droppedEntityObject
+			:new({
+				id = HttpService:GenerateGUID(),
+				position = position,
+				power = power,
+				expireInterval = expireInterval,
+				ownership = player,
+				amount = amount,
+				type = type,
+			})
+			:register()
 	end
+
+local bulk = function(
+	player: Player,
+	type: string,
+	count: number,
+	amount: number,
+	position: Vector3,
+	power: number?,
+	expireInterval: number?
+)
+	debugger.assert(t.integer(count))
+	debugger.assert(t.number(amount))
+	local list = {}
+
+	for i = 1, count do
+		table.insert(list, new(player, type, amount, position, power, expireInterval))
+	end
+
+	return list
+end
 
 return {
 	load = function()
@@ -164,7 +183,9 @@ return {
 		end)
 
 		bridges.collectDroppedEntity:Connect(function(player, id)
-			if not indexes[player] then return end
+			if not indexes[player] then
+				return
+			end
 			for _, self in pairs(indexes[player]) do
 				if self.id == id then
 					return self:collect()

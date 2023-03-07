@@ -31,6 +31,7 @@ local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local SimplePath = require(ReplicatedStorage.shared.SimplePath)
+local weapons = require(ReplicatedStorage.shared.weapons)
 
 local entities = require(script.Parent.entities)
 
@@ -50,9 +51,9 @@ local resources = ReplicatedStorage.resources.combat_resources
 local sounds = {
 	punch = {
 		resources.sound_effects.punch1,
-		resources.sound_effects["punch 2"]
+		resources.sound_effects["punch 2"],
 	},
-	punchHit = resources.sound_effects["punch hit"]
+	punchHit = resources.sound_effects["punch hit"],
 }
 
 local states = {
@@ -130,13 +131,21 @@ function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
 			knockback,
 			playerCFrame.lookVector.Z * knockback
 		)
-		local num = math.random(1, #self.data.animations.KnockbackAnimation)
-		self:replicateAnimationToClient("Play", "KnockbackAnimation", num)
-		self._canUpdateState = false
-		self.humanoid.WalkSpeed = 0
+
+		self.lastAttacker = player
+		self.entity.Humanoid:TakeDamage(damage)
+		bridges.entityDamaged:FireAllInRange(self.rootpart.Position, 100, self.entity, player, damage, damageType)
+		
+		local realKnockback = math.clamp(knockback - self.data.knockbackResistance, 0, 20)
+		if realKnockback > 8 then
+			local num = math.random(1, #self.data.animations.KnockbackAnimation)
+			self:replicateAnimationToClient("Play", "KnockbackAnimation", num)
+			self._canUpdateState = false
+			self.humanoid.WalkSpeed = 0
+		end
 		task.wait(0.1)
 		bodyVelocity:Destroy()
-		task.wait(knockback / 50)
+		task.wait(realKnockback / 50)
 
 		self.humanoid.WalkSpeed = self.data.walkSpeed
 		if self.target or self.movingLocation then
@@ -152,9 +161,6 @@ function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
 	if not self.target then
 		self:changeTarget(player.Character)
 	end
-	self.lastAttacker = player
-	self.entity.Humanoid:TakeDamage(damage)
-	bridges.entityDamaged:FireAllInRange(self.rootpart.Position, 100, self.entity, player, damage, damageType)
 end
 
 function entity:playerHit(player)
@@ -354,6 +360,7 @@ function entity:spawn(spawnCFrame: CFrame)
 	gyro.D = 150
 	gyro.P = 4000
 	gyro.MaxTorque = Vector3.new(0, 10000, 0)
+	gyro.CFrame = self._spawnCFrame
 	gyro.Parent = nil
 
 	self.gyro = gyro
@@ -440,25 +447,55 @@ entityModule.new = function(id: number, cf: CFrame)
 			table.insert(monsters, monster)
 		end)
 		monster.onPlayerHit:Connect(function(player)
-			bridges.playEntitySound:FireAllInRange(monster.rootpart.Position, 30, player.Character.HumanoidRootPart, sounds.punchHit)
+			if monster.isDead then return end
+			bridges.playEntitySound:FireAllInRange(
+				monster.rootpart.Position,
+				30,
+				player.Character.HumanoidRootPart,
+				sounds.punchHit
+			)
 			player.Character.Humanoid:TakeDamage(monster.data.baseDamage)
 		end)
 		monster.onAttackBegin:Connect(function()
-			task.wait(0.2)
+			if monster.isDead then return end
 			monster.canDamage = true
 		end)
 		monster.onAttackEnded:Connect(function()
 			monster.canDamage = false
 		end)
 		monster.onPlayerEnterViewRange:Connect(function(player)
+			if monster.isDead then return end
 			if monster.target and monster:isValidTarget(monster.target) then
 				return
 			end
 			monster:changeTarget(player.Character)
 		end)
 		monster.onDeath:Connect(function(killer)
-			droppedEntityHandler.bulk(killer, "coin", 20, 10, monster.entity.HumanoidRootPart.Position)
-			droppedEntityHandler.one(killer, "weapon/25", 1, monster.entity.HumanoidRootPart.Position)
+			monster.isDead = true
+			local xpReward = math.random(monster.data.expDrop.min, monster.data.expDrop.max)
+			droppedEntityHandler.bulk(killer, "xp", 10, xpReward/10, monster.entity.HumanoidRootPart.Position)
+			if math.random() < 0.4 then
+				local chance = math.random() * 100
+				local v = 0
+				local selected
+
+				local clone = table.clone(monster.data.drops)
+
+				table.sort(clone, function(a, b)
+					return a < b
+				end)
+
+				for name, dropChance in pairs(monster.data.drops) do
+					if chance <= v + dropChance then
+						selected = name
+						break
+					end
+					v += dropChance
+				end
+
+				local dropId = weapons[selected].id
+				droppedEntityHandler.one(killer, "weapon/" .. dropId, 1, monster.entity.HumanoidRootPart.Position)
+			end
 			monster.entity.HumanoidRootPart.Anchored = true
 			for _, object in pairs(monster.entity:GetDescendants()) do
 				if object:IsA("BasePart") then
@@ -473,6 +510,7 @@ entityModule.new = function(id: number, cf: CFrame)
 		monster:spawn(cf)
 
 		monster.hitbox.Touched:Connect(function(touchPart)
+			if monster.isDead then return end
 			if monster.canDamage then
 				local player = Players:GetPlayerFromCharacter(touchPart.Parent)
 					or Players:GetPlayerFromCharacter(touchPart.Parent.Parent)
@@ -525,7 +563,7 @@ function entityModule:load()
 				if not monsterEntity.target:FindFirstChild("Humanoid") then
 					monsterEntity:changeTarget(nil)
 				else
-					if monsterEntity.target.Humanoid.Health < 1 then
+					if monsterEntity.target.Humanoid.Health <= 0 then
 						monsterEntity:changeTarget(nil)
 					end
 				end
@@ -605,5 +643,7 @@ function entityModule:load()
 		end
 	end)
 end
+
+
 
 return entityModule

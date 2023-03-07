@@ -87,7 +87,7 @@ local initializeCharacter = function(character)
 
 	for _, object: typeof(class) in pairs(animations._objects) do
 		if object.animationTrack then
-			object:Destroy()
+			object.animationTrack:Destroy()
 		end
 		object.animationTrack = animator:LoadAnimation(object.animationObject)
 	end

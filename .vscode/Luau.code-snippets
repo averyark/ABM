@@ -31,6 +31,7 @@
             "local debounce = require(ReplicatedStorage.shared.debounce)",
             "local number = require(ReplicatedStorage.shared.number)",
             "local tween = require(ReplicatedStorage.shared.tween)",
+            "local playerDataHandler = require(ReplicatedStorage.shared.playerData)",
             "",
         ],
         "description": "-"

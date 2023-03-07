@@ -4,13 +4,13 @@ registry = "test"
 
 [[package]]
 name = "averyark/astraxv2"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [["BridgeNet", "ffrostflame/bridgenet@2.0.0-rc4"], ["Janitor", "howmanysmall/janitor@1.14.2"], ["Promise", "evaera/promise@4.0.0"], ["Signal", "sleitnick/signal@1.2.1"], ["TableUtil", "tpc9000/tableutil@0.1.1"], ["TestEZ", "roblox/testez@0.4.1"], ["t", "osyrisrblx/t@3.0.0"]]
 
 [[package]]
 name = "averyark/wip"
 version = "0.0.1"
-dependencies = [["Astrax", "averyark/astraxv2@0.0.13"], ["BoatTween", "penguindevs/boattween@1.0.1"], ["BridgeNet", "ffrostflame/bridgenet@2.0.0-rc4"], ["Janitor", "howmanysmall/janitor@1.14.2"], ["Matter", "evaera/matter@0.6.2"], ["ProfileService", "brittonfischer/profileservice@2.1.5"], ["Promise", "evaera/promise@4.0.0"], ["RaycastHitbox", "ruizukun-dev/raycasthitbox@1.0.2"], ["Signal", "sleitnick/signal@1.2.1"], ["TableUtil", "tpc9000/tableutil@0.1.1"], ["t", "osyrisrblx/t@3.0.0"]]
+dependencies = [["Astrax", "averyark/astraxv2@0.0.15"], ["BoatTween", "penguindevs/boattween@1.0.1"], ["BridgeNet", "ffrostflame/bridgenet@2.0.0-rc4"], ["Janitor", "howmanysmall/janitor@1.14.2"], ["Matter", "evaera/matter@0.6.2"], ["ProfileService", "brittonfischer/profileservice@2.1.5"], ["Promise", "evaera/promise@4.0.0"], ["RaycastHitbox", "ruizukun-dev/raycasthitbox@1.0.2"], ["Signal", "sleitnick/signal@1.2.1"], ["TableUtil", "tpc9000/tableutil@0.1.1"], ["t", "osyrisrblx/t@3.0.0"]]
 
 [[package]]
 name = "brittonfischer/profileservice"

@@ -12,7 +12,9 @@ local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 local StarterPlayer = game:GetService("StarterPlayer")
 
-if RunService:IsClient() then return error("CANNOT BE CALLED ON THE CLIENT") end
+if RunService:IsClient() then
+	return error("CANNOT BE CALLED ON THE CLIENT")
+end
 
 local BridgeNet = require(ReplicatedStorage.Packages.BridgeNet)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
@@ -58,7 +60,9 @@ local compare = function(
 	local changes = {}
 
 	local checkAndAddChange
-	checkAndAddChange = function(tbr1, tbr2, previousPath)
+	checkAndAddChange = function(tbr1, -- new
+		tbr2, -- old
+		previousPath, flip)
 		-- input key, value1 and value2
 		local add = function(k, v1, v2)
 			local path = table.clone(previousPath)
@@ -70,8 +74,8 @@ local compare = function(
 			end
 
 			table.insert(changes, {
-				old = v2,
-				new = v1,
+				old = if flip then v1 else v2,
+				new = if flip then v2 else v1,
 				key = k,
 				path = path,
 				supertable = tb1,
@@ -84,7 +88,7 @@ local compare = function(
 				table.insert(path, key)
 
 				if typeof(tbr2[key]) == "table" then
-					checkAndAddChange(value, tbr2[key], path)
+					checkAndAddChange(value, tbr2[key], path, flip)
 				else
 					add(key, value, tbr2[key])
 				end
@@ -97,7 +101,7 @@ local compare = function(
 	end
 
 	checkAndAddChange(tb1, tb2, {})
-	checkAndAddChange(tb2, tb1, {})
+	checkAndAddChange(tb2, tb1, {}, true)
 
 	return changes, #changes
 end
@@ -174,7 +178,7 @@ function dataClass:Destroy()
 	self.profile:Release()
 end
 
-function dataClass:connect(path, f: (changes: {new: any, old: any}) -> ())
+function dataClass:connect(path, f: (changes: { new: any, old: any }) -> ())
 	debugger.assert(t.table(path))
 	debugger.assert(t.callback(f))
 	self.connectedFunctions[path] = f

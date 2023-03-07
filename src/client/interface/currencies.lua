@@ -36,6 +36,7 @@ local currencies = {}
 
 function currencies:load()
 	local currenciesObject = Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("hud").currencies
+	local earnCurrency = Players.LocalPlayer.PlayerGui:WaitForChild("earnCurrency")
 
 	local coins = currenciesObject.coins.inner.label
 	local otween
@@ -56,10 +57,43 @@ function currencies:load()
 		}, 0.1)
 	end
 
-	playerDataHandler:connect({"coins"}, function(data)
-		--[[if data.old then
-			--SoundService:PlayLocalSound(uiSounds["coin getter"])
-		end]]
+	playerDataHandler:connect({ "coins" }, function(data)
+		local n = playerDataHandler:findChanges(data)
+		if n then
+			task.spawn(function()
+				local clone = ReplicatedStorage.resources.coinObtained:Clone()
+				clone.label.Text = number.abbreviate(n, 2)
+				clone.Parent = earnCurrency
+
+				clone.icon.ImageTransparency = 1
+				clone.label.TextTransparency = 1
+
+				tween.instance(clone.icon, {
+					ImageTransparency = 0
+				}, .15)
+				tween.instance(clone.label, {
+					TextTransparency = 0
+				}, .15)
+
+				local pos = UDim2.fromScale(math.random(), math.random())
+				
+				clone.Position = pos
+
+				tween.instance(clone, {
+					Position = pos - UDim2.fromScale(0, 0.1)
+				}, 1).Completed:Wait()
+				tween.instance(clone.icon, {
+					ImageTransparency = 1
+				}, .5)
+				tween.instance(clone.label, {
+					TextTransparency = 1
+				}, .5)
+				tween.instance(clone.label.stroke, {
+					Transparency = 1
+				}, .5).Completed:Wait()
+				clone:Destroy()
+			end)
+		end
 		update(data.new)
 	end)
 end

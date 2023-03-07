@@ -78,6 +78,8 @@ if RunService:IsClient() then
 
 	local cache = {}
 
+	local lastOutput
+
 	local manifestOutput = function(message, _type)
 		for _, s in pairs(silence) do
 			if message:match(s) then
@@ -92,8 +94,43 @@ if RunService:IsClient() then
 		local info = outputTypes[_type]
 		local connection
 
-		object.Name = "debugid:" .. #cache
-		object.Text = message
+		local manifestMessage = message
+
+		if lastOutput and lastOutput.message == message then
+			lastOutput.rep += 1
+			lastOutput.object.Text = (if lastOutput.expanded then lastOutput.rawMessage else lastOutput.message) .. "(x" .. lastOutput.rep .. ")"
+			return
+		end
+
+		local specialMessageFunc = {
+			["{"] = function(matched, regex)
+				local openPos = manifestMessage:find("{")
+				local closePos = manifestMessage:reverse():find("}")
+
+				manifestMessage = manifestMessage:sub(0, openPos-1) .. "[<table>(condensed:Click to expand)]" .. manifestMessage:sub(manifestMessage:len()-closePos+2, -1)
+			end,
+		}
+
+		for regex, f in pairs(specialMessageFunc) do
+			local matched = manifestMessage:find(regex)
+			if matched then
+				f(matched, regex)
+			end
+		end
+
+		if manifestMessage:len() > 320 then
+			manifestMessage = manifestMessage:sub(0, 320) .. " ...[<debug-message>(condensed:Click to expand)]"
+		end
+
+		local id = #cache
+		local meta = { message = manifestMessage, rawMessage = message, type = _type, object = object, rep = 1, expanded = false, id = id }
+
+		table.insert(cache, meta)
+
+		lastOutput = meta
+
+		object.Text = manifestMessage
+		object.Name = "debugid:" .. id
 		object.BackgroundTransparency = 0.1
 		object.BorderSizePixel = 2
 		object.BackgroundColor3 = info.backgroundColor
@@ -102,14 +139,20 @@ if RunService:IsClient() then
 		object.AutomaticSize = Enum.AutomaticSize.XY
 		object.TextSize = 15
 		object.TextWrapped = true
+		object.AutoLocalize = false
 		object.TextXAlignment = Enum.TextXAlignment.Left
 		object.FontFace = Font.new("Source Sans Pro")
 		object.Parent = container
 		connection = object.Activated:Connect(function()
-			connection:Disconnect()
-			object:Destroy()
+			--connection:Disconnect()
+			--object:Destroy()
+			meta.expanded = not meta.expanded
+			if meta.expanded then
+				object.Text = message .. "(x" .. meta.rep .. ")"
+			else
+				object.Text = manifestMessage .. "(x" .. meta.rep .. ")"
+			end
 		end)
-		table.insert(cache, { message = message, type = _type })
 
 		if index.debugSettings.fadeOutputMessage then
 			task.wait(manifestTime)

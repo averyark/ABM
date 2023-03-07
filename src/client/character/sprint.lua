@@ -115,10 +115,12 @@ function sprint:load()
 	local player = Players.LocalPlayer
 	player.CharacterAdded:Connect(function(char)
 		isSprinting = false
+		usingWeaponState = false
 		character = char
 	end)
 	if player.Character then
 		isSprinting = false
+		usingWeaponState = false
 		character = player.Character
 	end
 	ContextActionService:BindAction("sprint", function(_, inputState, inputObject: InputObject)

@@ -166,7 +166,6 @@ return {
 			end
 		)
 		bridges.entityDamaged:Connect(function(entityModel, player, damage, damageType)
-			print(damage, damageType)
 			local clientEntityObject = clientEntityObjects[entityModel]
 			if not clientEntityObject then
 				return
