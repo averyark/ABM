@@ -48,8 +48,8 @@ return {
 			["Dull Blade"] = 10,
 		},
 		expDrop = {
-			min = 200, -- Kill 10
-			max = 600 -- Kill 4
+			min = 100,
+			max = 300
 		},
 
 		maxHealth = 200,
@@ -106,8 +106,8 @@ return {
 			["Norse"] = 10,
 		},
 		expDrop = {
-			min = 600, -- Kill 10
-			max = 1400 -- Kill 4
+			min = 500,
+			max = 900
 		},
 
 		maxHealth = 2400,
@@ -165,8 +165,8 @@ return {
 			["Dark Iron Sword"] = 3,
 		},
 		expDrop = {
-			min = 1400, -- Kill 10
-			max = 2900 -- Kill 4
+			min = 1150,
+			max = 3450,
 		},
 
 
@@ -226,8 +226,8 @@ return {
 		},
 
 		expDrop = {
-			min = 1400, -- Kill 10
-			max = 2900 -- Kill 4
+			min = 3550,
+			max = 10650,
 		},
 
 		maxHealth = 75000,
@@ -283,6 +283,11 @@ return {
 			["Dull Blade"] = 15,
 			["Norse"] = 60,
 			["Dark Iron Sword"] = 15,
+		},
+
+		expDrop = {
+			min = 11700,
+			max = 35100,
 		},
 
 		maxHealth = 144000,

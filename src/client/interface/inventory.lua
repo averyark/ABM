@@ -408,7 +408,19 @@ return {
 				button.Activated:Connect(function()
 					selectPage(button.Name)
 				end)
-				button.MouseEnter:Connect(function()
+				UserInputService.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						tween.instance(button, {
+							Size = UDim2.fromOffset(70, 70)
+						}, .15, "Back")
+					end
+				end)
+				button.MouseButton1Down:Connect(function()
+					tween.instance(button, {
+						Size = UDim2.fromOffset(60, 60)
+					}, .1)
+				end)
+				--[[button.MouseEnter:Connect(function()
 					tween.instance(button.innerOutline.stroke, {
 						Color = buttonColorCache[button].hoveredColor,
 					}, 0.3)
@@ -426,7 +438,7 @@ return {
 					tween.instance(button.icon, {
 						Size = UDim2.fromOffset(32, 32),
 					}, 0.2)
-				end)
+				end)]]
 			end
 		end
 		selectPage("Sword")

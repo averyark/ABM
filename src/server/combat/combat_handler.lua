@@ -29,8 +29,10 @@ local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local weapons = require(ReplicatedStorage.shared.weapons)
 local itemLevel = require(ReplicatedStorage.shared.itemLevel)
+local levels = require(ReplicatedStorage.shared.levels)
 
 local entity = require(script.Parent.Parent.entities.entity)
+local upgrade = require(script.Parent.Parent.systems.upgrade)
 
 local bridges = {
 	changeWeapon = BridgeNet.CreateBridge("changeWeapon"),
@@ -221,8 +223,11 @@ return {
 					damageType = "crit"
 					damage *= multiplication
 				end
+
+				damage *= math.max(levels[playerData.data.level].multiplier, 1) * (1 + upgrade.getValueFromUpgrades(fromPlayer, "Power Gain"))
+				
 				--bridges.playEntitySound:FireAllInRange(monster.rootpart.Position, 50, monster.rootpart, "hit")
-				print("damage:", damage .. "\nknockback:", weaponData.knockback .. "\ndamageType:", damageType .. "\nmultiFromLevel", itemLevel.getMultiFromLevel(equippedWeaponData.level))
+				--print("damage:", damage .. "\nknockback:", weaponData.knockback .. "\ndamageType:", damageType .. "\nmultiFromLevel", itemLevel.getMultiFromLevel(equippedWeaponData.level))
 				monster:takeDamage(fromPlayer, damage, damageType, weaponData.knockback, cframeOnhit)
 			end
 			--target.Humanoid:TakeDamage(weaponData.baseDamage)

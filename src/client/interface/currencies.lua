@@ -58,12 +58,15 @@ function currencies:load()
 	end
 
 	playerDataHandler:connect({ "coins" }, function(data)
+		if playerDataHandler.getPlayer().data.settings[6] then
+			return update(data.new)
+		end
 		local n = playerDataHandler:findChanges(data)
 		if n then
 			task.spawn(function()
 				local clone = ReplicatedStorage.resources.coinObtained:Clone()
 				clone.label.Text = number.abbreviate(n, 2)
-				clone.Parent = earnCurrency
+				clone.Parent = earnCurrency.coin
 
 				clone.icon.ImageTransparency = 1
 				clone.label.TextTransparency = 1

@@ -31,12 +31,14 @@ local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 local weapons = require(ReplicatedStorage.shared.weapons)
-
 local rarities = require(ReplicatedStorage.shared.rarities)
 
-local notifObjects = {}
-local notifClass = {}
-notifClass.__index = notifClass
+local settings = require(script.Parent.Parent.interface.settings)
+
+local bridges = {
+	notifError = BridgeNet.CreateBridge("notifError"),
+	notifMessage = BridgeNet.CreateBridge("notifMessage"),
+}
 
 local findItem = function(id, items): typeof(weapons["Katana"])
 	for _, data in pairs(weapons) do
@@ -46,18 +48,34 @@ local findItem = function(id, items): typeof(weapons["Katana"])
 	end
 end
 
+local notifObjects = {}
+local notifClass = {}
+notifClass.__index = notifClass
+
 function notifClass:Destroy()
 	table.remove(notifObjects, table.find(notifObjects, self))
 
-	tween.instance(self.ui, {
-		Size = UDim2.fromOffset(0, 96),
-	}, 0.3, "Expo").Completed:Wait()
+	if not self.ui then return self._maid:Destroy() end
+	if self.type == "itemObtained" then
+		tween.instance(self.ui, {
+			Size = UDim2.fromOffset(0, 96),
+		}, 0.3, "Expo").Completed:Wait()
+	elseif self.type == "message" then
+		tween.instance(self.ui, {
+			TextTransparency = 1
+		}, .2)
+		tween.instance(self.ui.stroke, {
+			Transparency = 1
+		}, .2).Completed:Wait()
+	end
 	self.ui.Visible = false
-
 	self._maid:Destroy()
 end
 
 function notifClass:itemObtained(itemId: number, itemType: string, newlyObtained: boolean)
+	if not playerDataHandler.getPlayer().data.settings[5] then
+		return self:Destroy()
+	end
 	if self.type then
 		debugger.error("Notification type already set")
 	end
@@ -93,6 +111,64 @@ function notifClass:itemObtained(itemId: number, itemType: string, newlyObtained
 	self.rendered = true
 end
 
+function notifClass:message(message: string, color: Color3?)
+	if self.type then
+		debugger.error("Notification type already set")
+	end
+	self.type = "message"
+	local ui = ReplicatedStorage.resources.message:Clone()
+	self.ui = ui
+	self._maid:Add(ui)
+
+	ui.Name = "message-" .. message
+	ui.TextColor3 = color or Color3.fromRGB(255, 255, 255)
+	ui.Text = message
+	ui.TextTransparency = 1
+	ui.stroke.Transparency = 1
+	
+	ui.Parent = Players.LocalPlayer.PlayerGui.notification
+
+	tween.instance(ui, {
+		TextTransparency = 0
+	}, .2)
+	tween.instance(ui.stroke, {
+		Transparency = 0.3
+	}, .2)
+
+	self.renderClock = os.clock()
+	self.rendered = true
+end
+
+function notifClass:error(message: string)
+	if self.type then
+		debugger.error("Notification type already set")
+	end
+	self.type = "message"
+	local ui = ReplicatedStorage.resources.message:Clone()
+	self.ui = ui
+	self._maid:Add(ui)
+
+	ui.Name = "message-" .. message
+	ui.TextColor3 = Color3.fromRGB(255, 50, 50)
+	ui.Text = message
+	ui.TextTransparency = 1
+	ui.stroke.Transparency = 1
+	
+	ui.Parent = Players.LocalPlayer.PlayerGui.notification
+
+	settings.playSound(SoundService["error"])
+
+	tween.instance(ui, {
+		TextTransparency = 0
+	}, .2)
+	tween.instance(ui.stroke, {
+		Transparency = 0.3
+	}, .2)
+
+	self.renderClock = os.clock()
+	self.rendered = true
+end
+
 local notifObject = objects.new(notifClass, {})
 
 local new = function()
@@ -106,7 +182,9 @@ local new = function()
 	return object
 end
 
+
 return {
+	new = new,
 	load = function()
 		playerDataHandler:connect({ "inventory", "weapon" }, function(change)
 			local obtained = playerDataHandler:findChanges(change)
@@ -127,9 +205,16 @@ return {
 						occurance += 1
 					end
 				end
-				SoundService:PlayLocalSound(ReplicatedStorage.resources.ui_sound_effects["Item Notification"])
+				settings.playSound(ReplicatedStorage.resources.ui_sound_effects["Item Notification"])
 				new():itemObtained(id, "weapon", newlyObtained)
 			end
+		end)
+
+		bridges.notifError:Connect(function(message)
+			new():error(message)
+		end)
+		bridges.notifMessage:Connect(function(message, color)
+			new():message(message, color)
 		end)
 
 		RunService.Heartbeat:Connect(function(deltaTime)

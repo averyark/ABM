@@ -108,8 +108,21 @@ if RunService:IsServer() then
 		shards = 0,
 		xp = 0,
 		level = 0,
+		rebirth = 0,
 		equipped = {
 			weapon = 1,
+		},
+		unlockedWorlds = {
+			1
+		},
+		upgrades = {
+			[1] = {
+				[1] = 0,
+				[2] = 0,
+				[3] = 0,
+				[4] = 0,
+				[5] = 0,
+			},
 		},
 		inventory = {
 			weapon = {
@@ -129,7 +142,17 @@ if RunService:IsServer() then
 			itemsObtained = {
 				weapon = 1,
 			},
+			xpCollected = 0,
+			coinsCollected = 0,
 		},
+		settings = {
+			[1] = true,
+			[2] = true,
+			[3] = true,
+			[4] = true,
+			[5] = true,
+			[6] = true
+		}
 	}
 
 	local playerDataCache = {}
@@ -171,6 +194,7 @@ if RunService:IsServer() then
 		public.changed = Signal.new()
 
 		function public:apply(f: (typeof(public)) -> ()) end
+		function public:connect(key: {string}, f: (changes: {new: any, old: any?}) -> ()) end
 
 		return public
 	end

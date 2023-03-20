@@ -34,6 +34,7 @@ local SimplePath = require(ReplicatedStorage.shared.SimplePath)
 local weapons = require(ReplicatedStorage.shared.weapons)
 
 local entities = require(script.Parent.entities)
+local upgrade = require(script.Parent.Parent.systems.upgrade)
 
 local entity = { __DEBUG__ENABLED = false }
 local entityModule = {}
@@ -472,9 +473,9 @@ entityModule.new = function(id: number, cf: CFrame)
 		end)
 		monster.onDeath:Connect(function(killer)
 			monster.isDead = true
-			local xpReward = math.random(monster.data.expDrop.min, monster.data.expDrop.max)
+			local xpReward = math.random(monster.data.expDrop.min, monster.data.expDrop.max) * (1 + upgrade.getValueFromUpgrades(killer, "Fast Learner"))
 			droppedEntityHandler.bulk(killer, "xp", 10, xpReward/10, monster.entity.HumanoidRootPart.Position)
-			if math.random() < 0.4 then
+			if math.random() < 0.4 + upgrade.getValueFromUpgrades(killer, "Luck") then
 				local chance = math.random() * 100
 				local v = 0
 				local selected

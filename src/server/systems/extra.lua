@@ -1,9 +1,9 @@
 --!strict
 --[[
-    FileName    > itemsHandler.lua
+    FileName    > extra.lua
     Author      > AveryArk
     Contact     > Twitter: https://twitter.com/averyark_
-    Created     > 11/01/2023
+    Created     > 14/03/2023
 --]]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
@@ -29,22 +29,14 @@ local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 
-local itemClass = {}
-itemClass.__index = itemClass
-
-function itemClass:delete() end
-
-function itemClass:interact() end
-
-function itemClass:Destroy() end
-
-local itemObject = objects.new(itemClass)
-
-local new = function(itemData)
-	return itemObject:new(itemData)
-end
+local bridges = {
+	playSound = BridgeNet.CreateBridge("playSound"),
+    notifError = BridgeNet.CreateBridge("notifError"),
+    notifMessage = BridgeNet.CreateBridge("notifMessage"),
+}
 
 return {
-	load = function() end,
-	new = new,
+    load = function()
+        
+    end
 }

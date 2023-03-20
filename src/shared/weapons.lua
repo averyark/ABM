@@ -118,7 +118,7 @@ return {
 		iconId = "rbxassetid://12191690446",
 
 		power = 67,
-		coin = 900,
+		coin = 90,
 		baseDamage = 100,
 		critChance = 0.2,
 		critMultiplication = { 1.4, 2.2 },
@@ -270,7 +270,7 @@ return {
 		iconId = "rbxassetid://12182177684",
 
 		power = 240,
-		coin = 90,
+		coin = 900,
 		baseDamage = 100,
 		critChance = 0.3,
 		critMultiplication = { 1.5, 2.3 },

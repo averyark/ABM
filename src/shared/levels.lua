@@ -16,45 +16,49 @@ return {
 
 
     --]]
+    [0] = {
+        requirement = 2000,
+        multiplier = 1,
+    },
     [1] = {
         requirement = 2000,
-        multiplier = 0,
+        multiplier = 1.2,
     },
     [2] = {
-        requirement = 5000,
-        multiplier = 0,
+        requirement = 6000,
+        multiplier = 1.4,
     },
     [3] = {
-        requirement = 14000,
-        multiplier = 0,
+        requirement = 21000,
+        multiplier = 1.7,
     },
     [4] = {
-        requirement = 29000,
-        multiplier = 0,
+        requirement = 42000,
+        multiplier = 2,
     },
     [5] = {
-        requirement = 50000,
-        multiplier = 0,
+        requirement = 69000,
+        multiplier = 2.4,
     },
     [6] = {
-        requirement = 77000,
-        multiplier = 0,
+        requirement = 138000,
+        multiplier = 2.8,
     },
     [7] = {
-        requirement = 110000,
-        multiplier = 0,
+        requirement = 213000,
+        multiplier = 3.3,
     },
     [8] = {
-        requirement = 149000,
-        multiplier = 0,
+        requirement = 426000,
+        multiplier = 3.8,
     },
     [9] = {
-        requirement = 194000,
-        multiplier = 0,
+        requirement = 1170000,
+        multiplier = 4.2,
     },
     [10] = {
-        requirement = 245000,
-        multiplier = 0,
+        requirement = 1638000,
+        multiplier = 4.8,
     },
 
     --[[ Data

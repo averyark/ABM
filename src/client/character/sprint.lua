@@ -28,6 +28,7 @@ local debugger = require(Astrax.debugger)
 local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
+local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 
 local movement = require(script.Parent.movement)
 
@@ -61,9 +62,10 @@ local beginSprint = function()
 	isSprinting = true
 
 	local humanoid = character.Humanoid
+	local defaultWalkSpeed = humanoid:GetAttribute("defaultWalkSpeed") or 16
 
 	tweenObject1 = tween.instance(humanoid, {
-		WalkSpeed = 24,
+		WalkSpeed = defaultWalkSpeed + 8,
 	}, 0.5, "Cubic")
 	tweenObject2 = tween.instance(workspace.CurrentCamera, {
 		FieldOfView = 80,
@@ -92,8 +94,10 @@ local endSprint = function()
 
 	local humanoid = character.Humanoid
 
+	local defaultWalkSpeed = humanoid:GetAttribute("defaultWalkSpeed") or 16
+
 	tweenObject1 = tween.instance(humanoid, {
-		WalkSpeed = 16,
+		WalkSpeed = defaultWalkSpeed,
 	}, 0.5, "Cubic")
 	tweenObject2 = tween.instance(workspace.CurrentCamera, {
 		FieldOfView = 70,
@@ -117,26 +121,55 @@ function sprint:load()
 		isSprinting = false
 		usingWeaponState = false
 		character = char
+		character:WaitForChild("Humanoid"):GetAttributeChangedSignal("defaultWalkSpeed"):Connect(function()
+			if isSprinting then
+				tween.instance(character.Humanoid, {
+					WalkSpeed = character.Humanoid:GetAttribute("defaultWalKSpeed") + 8,
+				}, 0.25, "Cubic")
+			else
+				tween.instance(character.Humanoid, {
+					WalkSpeed = character.Humanoid:GetAttribute("defaultWalKSpeed"),
+				}, 0.25, "Cubic")
+			end
+		end)
 	end)
 	if player.Character then
 		isSprinting = false
 		usingWeaponState = false
 		character = player.Character
+		character:WaitForChild("Humanoid"):GetAttributeChangedSignal("defaultWalkSpeed"):Connect(function()
+			if isSprinting then
+				tween.instance(character.Humanoid, {
+					WalkSpeed = character.Humanoid:GetAttribute("defaultWalKSpeed") + 8,
+				}, 0.25, "Cubic")
+			else
+				tween.instance(character.Humanoid, {
+					WalkSpeed = character.Humanoid:GetAttribute("defaultWalKSpeed"),
+				}, 0.25, "Cubic")
+			end
+		end)
 	end
+	
 	ContextActionService:BindAction("sprint", function(_, inputState, inputObject: InputObject)
 		if inputObject.KeyCode == Enum.KeyCode.LeftShift then
 			if inputState == Enum.UserInputState.Begin then
-				sprintKeyDown = true
-				beginSprint()
+				if not playerDataHandler.getPlayer().data.settings[3] then
+					if sprintKeyDown then
+						sprintKeyDown = false
+						endSprint()
+					else
+						sprintKeyDown = true
+						beginSprint()
+					end
+				else
+					sprintKeyDown = true
+					beginSprint()
+				end
 			elseif inputState == Enum.UserInputState.End then
-				sprintKeyDown = false
-				endSprint()
-			end
-		else
-			if isSprinting then
-				endSprint()
-			else
-				beginSprint()
+				if playerDataHandler.getPlayer().data.settings[3] then
+					sprintKeyDown = false
+					endSprint()
+				end
 			end
 		end
 	end, true, Enum.KeyCode.LeftShift)

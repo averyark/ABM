@@ -32,6 +32,8 @@ local tween = require(ReplicatedStorage.shared.tween)
 local weapons = require(ReplicatedStorage.shared.weapons)
 local rarities = require(ReplicatedStorage.shared.rarities)
 
+local settings = require(script.Parent.Parent.interface.settings)
+
 local player = Players.LocalPlayer
 local entityTemplate = ReplicatedStorage.resources.droppedEntity
 local droppedCurrencyHolder = workspace.gameFolders.droppedCurrencies
@@ -211,7 +213,7 @@ function droppedEntityClass:collect()
 			if rType == "weapon" then
 				billboard.orb.label.stroke.Color = Color3.fromRGB(29, 29, 29)
 			elseif rType == "coin" then
-				SoundService:PlayLocalSound(uiSounds["coin getter"])
+				settings.playSound(uiSounds["coin getter"])
 			end
 
 			billboard.orb.icon.Image = if data then data.iconId else icons[rType]

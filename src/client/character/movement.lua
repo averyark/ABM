@@ -28,6 +28,7 @@ local debugger = require(Astrax.debugger)
 local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
+local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 
 local movement = {}
 
@@ -38,6 +39,7 @@ local gameFolders = workspace.gameFolders
 local locking
 local resetTick
 local isSprinting = false
+local canLock = true
 
 local cacheTweenHighlighter
 
@@ -90,7 +92,7 @@ local lockToObject = function(object)
 end
 
 local lockTarget = function(target)
-	if isSprinting then
+	if isSprinting or not canLock then
 		return
 	end
 	if locking == target then
@@ -144,6 +146,17 @@ end
 
 function movement:load()
 	local entities = gameFolders.entities
+
+
+
+	playerDataHandler:connect({"settings"}, function(changes)
+		if not changes.new[4] then
+			unlockTarget(locking)
+			canLock = false
+		else
+			canLock = true
+		end
+	end)
 
 	RunService.RenderStepped:Connect(function(deltaTime)
 		if not character then

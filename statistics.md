@@ -1,18 +1,18 @@
 ## Progress Control
 
 
-Level|Zone (Projected)|Enemy (Projected)|Kill to Attain (Projected)|EXP to Collect|Enemy EXP Drop|
--|-|-|-|-|-
-1|Naruto|Naruto|10|2000|200
-2|Naruto|Naruto|30|6000|200
-3|Naruto|Itachi|30|21000|700
-4|Naruto|Itachi|60|42000|700
-5|Naruto|Obito|30|69000|2300
-6|Naruto|Obito|60|138000|2300
-7|Naruto|Madara|30|213000|7100
-8|Naruto|Madara|60|426000|7100
-9|Naruto|Kaguya|50|1170000|23400
-10|Naruto|Kaguya|70|1638000|23400
+Level|Enemy (Projected)|Kill to Attain (Projected)|EXP to Collect|Enemy EXP Drop|
+-|-|-|-|-
+1|Naruto|10|2000|200
+2|Naruto|30|6000|200
+3|Itachi|30|21000|700
+4|Itachi|60|42000|700
+5|Obito|30|69000|2300
+6|Obito|60|138000|2300
+7|Madara|30|213000|7100
+8|Madara|60|426000|7100
+9|Kaguya|50|1170000|23400
+10|Kaguya|70|1638000|23400
 
 Sword|Power|Crit Chance|Crit Multi (AVG)|Damage (AVG)
 -|-|-|-|-

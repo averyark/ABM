@@ -29,6 +29,14 @@ local debugger = require(Astrax.debugger)
 local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
+local playerDataHandler = require(ReplicatedStorage.shared.playerData)
+local levels = require(ReplicatedStorage.shared.levels)
+
+local settings = require(script.Parent.Parent.interface.settings)
+
+local bridges = {
+	playSound = BridgeNet.CreateBridge("playSound")
+}
 
 local interface = {}
 
@@ -46,25 +54,31 @@ local uiSounds = ReplicatedStorage.resources.ui_sound_effects
 interface.showing = Signal.new()
 interface.hiding = Signal.new()
 
+local tweens = {}
+
 interface.unfocus = function()
 	if not showingUi then
 		return
 	end
+	for i, object in pairs(tweens) do
+		object:Destroy()
+	end
+	table.clear(tweens)
 	interface.hiding:Fire(showingUi)
-	tween.instance(playerCamera, {
+	table.insert(tweens, tween.instance(playerCamera, {
 		FieldOfView = 70,
-	}, 0.25)
-	tween.instance(uiBlurFocus, {
+	}, 0.25))
+	table.insert(tweens, tween.instance(uiBlurFocus, {
 		Size = 0,
-	}, 0.25)
+	}, 0.25))
 
 	local hud = Players.LocalPlayer.PlayerGui.hud
-	tween.instance(hud.currencies, {
+	--[[table.insert(tweens, tween.instance(hud.currencies, {
 		Position = UDim2.new(0, 0, 0.5, -40),
-	}, 0.3, "EntranceExpressive")
-	tween.instance(hud.buttons, {
+	}, 0.3, "EntranceExpressive"))]]
+	table.insert(tweens, tween.instance(hud.buttons, {
 		Position = UDim2.new(0, 8, 0.5, 66),
-	}, 0.3, "EntranceExpressive")
+	}, 0.3, "EntranceExpressive"))
 
 	showingUi.mainframe.Visible = false
 	showingUi = nil
@@ -81,14 +95,18 @@ interface.focus = function(ui)
 	interface.unfocus()
 	showingUi = ui
 	interface.showing:Fire(showingUi)
+	for i, object in pairs(tweens) do
+		object:Destroy()
+	end
+	table.clear(tweens)
 
 	local hud = Players.LocalPlayer.PlayerGui.hud
-	tween.instance(hud.currencies, {
+	--[[table.insert(tweens, tween.instance(hud.currencies, {
 		Position = UDim2.new(0, -250, 0.5, -40),
-	}, 0.3, "ExitExpressive")
-	tween.instance(hud.buttons, {
+	}, 0.3, "ExitExpressive"))]]
+	table.insert(tweens, tween.instance(hud.buttons, {
 		Position = UDim2.new(0, -231, 0.5, 60),
-	}, 0.3, "ExitExpressive")
+	}, 0.3, "ExitExpressive"))
 
 	-- reset
 	showingUi.mainframe.Visible = false
@@ -96,22 +114,22 @@ interface.focus = function(ui)
 	showingUi.mainframe.Position = UDim2.fromScale(0.5, 0.8)
 
 	if showingUi.Name == "shop" then
-		SoundService:PlayLocalSound(uiSounds["shop ui sound"])
+		settings.playSound(uiSounds["shop ui sound"])
 	end
 
-	tween.instance(showingUi.mainframe, {
+	table.insert(tweens, tween.instance(showingUi.mainframe, {
 		Position = UDim2.fromScale(0.5, 0.5),
-	}, 0.6)
-	tween.instance(showingUi.scaler, {
+	}, 0.6))
+	table.insert(tweens, tween.instance(showingUi.scaler, {
 		Scale = 1,
-	}, 0.4)
+	}, 0.4))
 	showingUi.mainframe.Visible = true
-	tween.instance(playerCamera, {
+	table.insert(tweens, tween.instance(playerCamera, {
 		FieldOfView = 55,
-	}, 0.5, "EntranceExpressive")
-	tween.instance(uiBlurFocus, {
+	}, 0.5, "EntranceExpressive"))
+	table.insert(tweens, tween.instance(uiBlurFocus, {
 		Size = 12,
-	}, 0.6)
+	}, 0.6))
 end
 
 interface.initUi = function(ui)
@@ -228,7 +246,7 @@ function interface:load()
 
 	local connect = function(button)
 		button.Activated:Connect(function()
-			SoundService:PlayLocalSound(uiSounds.Click)
+			settings.playSound(uiSounds.Click)
 		end)
 		button.MouseEnter:Connect(function()
 			--SoundService:PlayLocalSound(uiSounds.Hover)
@@ -264,7 +282,17 @@ function interface:load()
 		end
 	end)
 
-	SoundService:PlayLocalSound(SoundService.music)
+	--[[playerDataHandler:connect({"level"}, function(changes)
+		local levelMulti = levels[changes.new].multiplier
+
+		hud.damageMulti.Text = "Damage x" .. levelMulti
+	end)]]
+
+	bridges.playSound:Connect(function(sound)
+		settings.playSound(sound)
+	end)
+
+	settings.playSound(SoundService.music)
 end
 
 return interface
