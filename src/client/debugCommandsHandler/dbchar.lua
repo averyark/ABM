@@ -32,21 +32,6 @@ local renderCharacterSelection = function(character)
 	hrpSelection.Parent = character
 end
 
-task.spawn(function()
-	local reg = function(player)
-		dump:Add(player.CharacterAdded:Connect(function(character)
-			renderCharacterSelection(character)
-		end))
-		if player.Character then
-			renderCharacterSelection(player.Character)
-		end
-	end
-	dump:Add(Players.PlayerAdded:Connect(reg))
-	for _, player in pairs(Players:GetPlayers()) do
-		task.spawn(reg, player)
-	end
-end)
-
 return {
 	commandInvoked = function(arguments, index)
 		local debugger = require(index.debugger)

@@ -375,6 +375,8 @@ return {
 		rarity = 5,
 		iconId = "rbxassetid://12192182840",
 
+		soulbound = true,
+
 		special = {
 			{id = 1},
 		},

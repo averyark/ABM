@@ -30,7 +30,7 @@ local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local weapons = require(ReplicatedStorage.shared.weapons)
-
+local pass = require(script.Parent.Parent.systems.pass)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 
 local cleanupInterval = 0.5
@@ -40,6 +40,8 @@ local indexes = {}
 local bridges = {
 	makeDroppedEntity = BridgeNet.CreateBridge("makeDroppedEntity"),
 	collectDroppedEntity = BridgeNet.CreateBridge("collectDroppedEntity"),
+	notifError = BridgeNet.CreateBridge("notifError"),
+	itemObtained = BridgeNet.CreateBridge("itemObtained")
 }
 
 local droppedEntityClass = {
@@ -94,11 +96,29 @@ function droppedEntityClass:collect()
 		end)
 	elseif rType == "xp" then
 		playerDataHandler.getPlayer(self.ownership):apply(function(f)
-			print("added " .. self.amount)
 			f.data.xp += self.amount
 		end)
 	elseif rType == "weapon" then
 		local itemData = findItem(id)
+
+		local playerData = playerDataHandler.getPlayer(self.ownership)
+
+		local hasInfinite = pass.hasPass(self.ownership, "InfiniteInventory")
+		local hasSwordSpace = pass.hasPass(self.ownership, "50SwordSlots")
+		local hasVIP = pass.hasPass(self.ownership, "VIP")
+		local max = 20 +
+			(hasSwordSpace and 50 or 0) +
+			(hasVIP and 25 or 0)
+
+		if not hasInfinite and #playerData.data.inventory.weapon+1 > max then
+			bridges.notifError:FireTo(self.ownership, `Error: Insufficient Inventory Space! Trash { #playerData.data.inventory.hero - max} Sword(s) or purchase the gamepass.`)
+			--[[pass.promptPassPurchase(self.ownership,
+				if hasVIP and hasSwordSpace then "InfiniteInventory"
+						elseif hasVIP then "VIP"
+						else  "50SwordSlots"
+			)]]
+			return
+		end
 
 		playerDataHandler.getPlayer(self.ownership):apply(function(f)
 			table.insert(f.data.stats.obtainedItemIndex.weapon, itemData.id)
@@ -108,9 +128,9 @@ function droppedEntityClass:collect()
 				id = itemData.id,
 				level = 0,
 			})
-
 			--print("test", playerDataHandler.getPlayer(self.ownership).data)
 		end)
+		bridges.itemObtained:FireTo(self.ownership, "weapon", itemData.id, self.percentage)
 	end
 
 	self:Destroy()
@@ -193,16 +213,6 @@ return {
 			end
 		end)
 
-		RunService.Heartbeat:Connect(function(deltaTime)
-			if fountain:isLocked() then
-				return
-			end
-			fountain:lock()
-
-			for _, player in pairs(Players:GetPlayers()) do
-				new(player, "coin", 10, workspace.coinDispenser.Position, 8, 10)
-			end
-		end)
 		RunService.Heartbeat:Connect(function(deltaTime)
 			if cleanupDebounce:isLocked() then
 				return

@@ -12,6 +12,7 @@ local Lighting = game:GetService("Lighting")
 local SoundService = game:GetService("SoundService")
 local StarterGui = game:GetService("StarterGui")
 local StarterPlayer = game:GetService("StarterPlayer")
+local UserInputService = game:GetService("UserInputService")
 
 local BridgeNet = require(ReplicatedStorage.Packages.BridgeNet)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
@@ -31,7 +32,7 @@ local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 local levels = require(ReplicatedStorage.shared.levels)
-
+local inventory = require(script.Parent.inventory)
 local settings = require(script.Parent.Parent.interface.settings)
 
 local bridges = {
@@ -56,6 +57,24 @@ interface.hiding = Signal.new()
 
 local tweens = {}
 
+local locked = false
+
+interface.lock = function()
+	locked = true
+	for _, object in pairs(interfaceList) do
+		object.Enabled = false
+	end
+	playerCamera.FieldOfView = 70
+	uiBlurFocus.Size = 0
+end
+
+interface.unlock = function()
+	locked = false
+	for _, object in pairs(interfaceList) do
+		object.Enabled = true
+	end
+end
+
 interface.unfocus = function()
 	if not showingUi then
 		return
@@ -64,7 +83,6 @@ interface.unfocus = function()
 		object:Destroy()
 	end
 	table.clear(tweens)
-	interface.hiding:Fire(showingUi)
 	table.insert(tweens, tween.instance(playerCamera, {
 		FieldOfView = 70,
 	}, 0.25))
@@ -76,25 +94,49 @@ interface.unfocus = function()
 	--[[table.insert(tweens, tween.instance(hud.currencies, {
 		Position = UDim2.new(0, 0, 0.5, -40),
 	}, 0.3, "EntranceExpressive"))]]
-	table.insert(tweens, tween.instance(hud.buttons, {
+	tween.instance(hud.smallButtons, {
+		Position = UDim2.new(0, 8, 0.5, -112),
+	}, 0.3, "EntranceExpressive")
+	tween.instance(hud.right, {
+		Position = UDim2.new(1, -258, 0.5, 0),
+	}, 0.3, "EntranceExpressive")
+	tween.instance(hud.currencies, {
+		Position = UDim2.new(0, 0, 0.5, -40),
+	}, 0.3, "EntranceExpressive")
+	tween.instance(hud.buttons, {
 		Position = UDim2.new(0, 8, 0.5, 66),
-	}, 0.3, "EntranceExpressive"))
+	}, 0.3, "EntranceExpressive")
+	tween.instance(hud.level, {
+		Position = UDim2.new(0.5, 0, 1, -48),
+	}, 0.3, "EntranceExpressive")
+	tween.instance(hud.rebirth, {
+		Position = UDim2.new(1, -28, 1, -32),
+	}, 0.3, "EntranceExpressive")
 
 	showingUi.mainframe.Visible = false
 	showingUi = nil
 	task.wait(0.1)
+	task.delay(.3, function()
+		interface.hiding:Fire(showingUi)
+	end)
 end
 
-interface.focus = function(ui)
+interface.focus = function(ui, showCurrency, showQuest)
+	if locked then return end
 	if not table.find(interfaceList, ui) then
 		return
 	end
 	if showingUi == ui then
 		return interface.unfocus()
 	end
-	interface.unfocus()
-	showingUi = ui
+	if showingUi then
+		showingUi.mainframe.Visible = false
+		showingUi = nil
+		interface.hiding:Fire(showingUi)
+	end
+	--interface.unfocus()
 	interface.showing:Fire(showingUi)
+	showingUi = ui
 	for i, object in pairs(tweens) do
 		object:Destroy()
 	end
@@ -104,8 +146,28 @@ interface.focus = function(ui)
 	--[[table.insert(tweens, tween.instance(hud.currencies, {
 		Position = UDim2.new(0, -250, 0.5, -40),
 	}, 0.3, "ExitExpressive"))]]
+
+	if not showCurrency then
+		table.insert(tweens, tween.instance(hud.currencies, {
+			Position = UDim2.new(0, -250, 0.5, -40),
+		}, 0.3, "ExitExpressive"))
+	end
+	tween.instance(hud.smallButtons, {
+		Position = UDim2.new(0, -231, 0.5, -112),
+	}, 0.3, "ExitExpressive")
+	if not showQuest then
+		tween.instance(hud.right, {
+			Position = UDim2.new(1, 0, 0.5, 0),
+		}, 0.3, "ExitExpressive")
+	end
 	table.insert(tweens, tween.instance(hud.buttons, {
 		Position = UDim2.new(0, -231, 0.5, 60),
+	}, 0.3, "ExitExpressive"))
+	table.insert(tweens, tween.instance(hud.level, {
+		Position = UDim2.new(0.5, 0, 1, 0),
+	}, 0.3, "ExitExpressive"))
+	table.insert(tweens, tween.instance(hud.rebirth, {
+		Position = UDim2.new(1, -28, 1, 0),
 	}, 0.3, "ExitExpressive"))
 
 	-- reset
@@ -138,6 +200,12 @@ interface.initUi = function(ui)
 	table.insert(interfaceList, ui)
 	ui.mainframe.Visible = false
 	ui.Enabled = true
+
+	if ui.mainframe:FindFirstChild("close") then
+		ui.mainframe.close.Activated:Connect(function()
+			interface.unfocus()
+		end)
+	end
 end
 
 function interface:load()
@@ -148,7 +216,9 @@ function interface:load()
 		"stats",
 		"settings",
 		"ascend",
-		"inventory",
+		"sword",
+		"hero",
+		"fastTravel"
 	}
 
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -157,12 +227,13 @@ function interface:load()
 
 	local buttons = {}
 
-	local unselected = function(button)
+	local unselected = function(button, isSmallButton)
 		if selectedButton == button then
 			selectedButton = nil
 		end
 
 		local color = buttons[button].default
+		local size = isSmallButton and 18 or 32
 
 		tween.instance(button.tip.stroke, {
 			Color = color,
@@ -177,20 +248,24 @@ function interface:load()
 			Transparency = 1,
 		}, 0.2)
 		tween.instance(button.icon, {
-			Size = UDim2.fromOffset(32, 32),
+			Size = UDim2.fromOffset(size, size),
 		}, 0.2)
+		tween.instance(button.scale, {
+			Scale = 1
+		}, .15, "Back")
 	end
 
-	local selected = function(button)
+	local selected = function(button, isSmallButton)
 		if selectedButton == button then
 			return
 		end
 		if selectedButton then
-			unselected(selectedButton)
+			unselected(selectedButton, isSmallButton)
 		end
 		selectedButton = button
 
 		local color = buttons[button].hovered
+		local size = isSmallButton and 22 or 38
 
 		tween.instance(button.tip.stroke, {
 			Color = color,
@@ -205,15 +280,19 @@ function interface:load()
 			Transparency = 0,
 		}, 0.2)
 		tween.instance(button.icon, {
-			Size = UDim2.fromOffset(38, 38),
+			Size = UDim2.fromOffset(size, size),
 		}, 0.2)
+		tween.instance(button.scale, {
+			Scale = 1.05
+		}, .15, "Back")
 	end
 
 	for _, name in pairs(list) do
-		local ui = playerGui:FindFirstChild(name)
+		local ui = if name == "sword" or name == "hero" then playerGui:FindFirstChild("inventory")else playerGui:FindFirstChild(name)
 		interface.initUi(ui)
 
-		local button = hud.buttons:FindFirstChild(name) :: TextButton
+		local smallButton = hud.smallButtons:FindFirstChild(name) :: TextButton
+		local button = smallButton or hud.buttons:FindFirstChild(name) :: TextButton
 		local buttonMainColorCache = button.tip.stroke.Color
 		local h, s, v = buttonMainColorCache:ToHSV()
 		local hoveredColor = Color3.fromHSV(h, s, v + 0.3)
@@ -224,24 +303,43 @@ function interface:load()
 		}
 
 		button.SelectionGained:Connect(function()
-			selected(button)
+			selected(button, smallButton and true)
 		end)
 		button.SelectionLost:Connect(function()
-			unselected(button)
+			unselected(button, smallButton and true)
 		end)
 		button.MouseEnter:Connect(function()
-			selected(button)
+			selected(button, smallButton and true)
 		end)
 		button.MouseLeave:Connect(function()
-			unselected(button)
+			unselected(button, smallButton and true)
+		end)
+		button.MouseButton1Down:Connect(function(x, y)
+			tween.instance(button.scale, {
+				Scale = .9
+			}, .15, "Back")
+		end)
+		UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				tween.instance(button.scale, {
+					Scale = 1
+				}, .15, "Back")
+			end
 		end)
 		button.Activated:Connect(function()
-			interface.focus(ui)
+			if name == "sword" then
+				inventory.selectPage("Sword")
+			elseif name == "hero" then
+				inventory.selectPage("Hero")
+			end
+			interface.focus(ui, name == "shop" or name == "ascend")
 		end)
 
-		ui.mainframe.upper.close.Activated:Connect(function()
-			interface.unfocus()
-		end)
+		if ui.mainframe:FindFirstChild("close") then
+			ui.mainframe.close.Activated:Connect(function()
+				interface.unfocus()
+			end)
+		end
 	end
 
 	local connect = function(button)

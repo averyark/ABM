@@ -48,8 +48,8 @@ return {
 			["Dull Blade"] = 10,
 		},
 		expDrop = {
-			min = 100,
-			max = 300
+			min = 20,
+			max = 60
 		},
 
 		maxHealth = 200,
@@ -106,8 +106,8 @@ return {
 			["Norse"] = 10,
 		},
 		expDrop = {
-			min = 500,
-			max = 900
+			min = 100,
+			max = 180
 		},
 
 		maxHealth = 2400,
@@ -165,8 +165,8 @@ return {
 			["Dark Iron Sword"] = 3,
 		},
 		expDrop = {
-			min = 1150,
-			max = 3450,
+			min = 230,
+			max = 690,
 		},
 
 
@@ -226,8 +226,8 @@ return {
 		},
 
 		expDrop = {
-			min = 3550,
-			max = 10650,
+			min = 710,
+			max = 1520,
 		},
 
 		maxHealth = 75000,
@@ -286,8 +286,8 @@ return {
 		},
 
 		expDrop = {
-			min = 11700,
-			max = 35100,
+			min = 2340,
+			max = 4740,
 		},
 
 		maxHealth = 144000,
@@ -332,30 +332,36 @@ return {
 			},
 		},
 	},
-	["Dummy"] = {
-		name = "Dummy",
+	["Kaguya Boss"] = {
+		name = "Kaguya Boss",
 		id = 6,
-		model = ReplicatedStorage.entities["Dummy"],
+		model = ReplicatedStorage.entities["Kaguya Boss"],
 
 		level = 10,
 		drops = {
-			["Wooden"] = 25,
-			["Dull Blade"] = 25,
-			["Norse"] = 25,
-			["Dark Iron Sword"] = 25,
+			["Wooden"] = 0,
+			["Dull Blade"] = 5,
+			["Norse"] = 55,
+			["Dark Iron Sword"] = 29.9,
+			["Amenoma Kageuchi"] = 0.1
 		},
 
-		maxHealth = 2000,
+		expDrop = {
+			min = 4700,
+			max = 10040,
+		},
+
+		maxHealth = 2500000,
 		defence = 20,
-		knockbackResistance = 7,
-		rangeOfAttack = 5,
-		attackCooldown = .5,
-		baseDamage = 15,
+		knockbackResistance = 1000,
+		rangeOfAttack = 12,
+		attackCooldown = 2,
+		baseDamage = 60,
 		visualDistance = 12,
 		visualArcAngle = 100,
-		walkSpeed = 18,
+		walkSpeed = 10,
 
-		respawnTime = 15,
+		respawnTime = 20,
 		maximumDistanceFromSpawn = 70,
 
 		agentParameter = {

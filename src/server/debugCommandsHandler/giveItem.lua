@@ -36,7 +36,6 @@ return {
 		debugger.assert(foundData, "the id given does not correlate with any item in the database")
 
 		playerData:apply(function(f)
-			table.insert(f.data.stats.obtainedItemIndex.weapon, tonumber(id))
 			f.data.stats.itemsObtained.weapon += 1
 			table.insert(f.data.inventory.weapon, {
 				index = f.data.stats.itemsObtained.weapon,

@@ -51,7 +51,7 @@ local bridges = {
 local enteredUpgradeHitbox = function()
     isInside = true
     local ui = Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("boost")
-    interface.focus(ui)
+    interface.focus(ui, true)
 end
 
 local exitedUpgradeHitbox = function()

@@ -38,6 +38,7 @@ local settings = require(script.Parent.Parent.interface.settings)
 local bridges = {
 	notifError = BridgeNet.CreateBridge("notifError"),
 	notifMessage = BridgeNet.CreateBridge("notifMessage"),
+	itemObtained = BridgeNet.CreateBridge("itemObtained"),
 }
 
 local findItem = function(id, items): typeof(weapons["Katana"])
@@ -58,8 +59,8 @@ function notifClass:Destroy()
 	if not self.ui then return self._maid:Destroy() end
 	if self.type == "itemObtained" then
 		tween.instance(self.ui, {
-			Size = UDim2.fromOffset(0, 96),
-		}, 0.3, "Expo").Completed:Wait()
+			Position = UDim2.new(.5, 0, 1, 0)
+		}, .2, "ExitExpressive").Completed:Wait()
 	elseif self.type == "message" then
 		tween.instance(self.ui, {
 			TextTransparency = 1
@@ -72,7 +73,7 @@ function notifClass:Destroy()
 	self._maid:Destroy()
 end
 
-function notifClass:itemObtained(itemId: number, itemType: string, newlyObtained: boolean)
+function notifClass:itemObtained(itemType: string, itemId: number, percentage: number)
 	if not playerDataHandler.getPlayer().data.settings[5] then
 		return self:Destroy()
 	end
@@ -88,24 +89,45 @@ function notifClass:itemObtained(itemId: number, itemType: string, newlyObtained
 	self._maid:Add(ui)
 
 	ui.Name = "itemObtained-" .. itemId
-	ui.inner.stroke.Color = rarityData.primaryColor
-	ui.info.rarity.TextColor3 = rarityData.primaryColor
-	ui.info.rarity.Text = rarityData.name
-	ui.info.itemName.Text = itemData.name
-	ui.icon.Image = itemData.iconId
+	ui.Parent = Players.LocalPlayer.PlayerGui.hud.itemObtainedContainer
+	
+	ui.itemName.Text = itemData.name
+	ui.Image = itemData.iconId
 
-	if newlyObtained then
-		ui.info.footer.Text = "= Newly Obtained ="
-	else
-		ui.info.footer.Visible = false
-	end
+	ui.ImageColor3 = Color3.fromRGB(0, 0, 0)
+	ui.shine.ImageColor3 = Color3.fromRGB(0, 0, 0)
+	ui.percentage.TextTransparency = 1
+	ui.percentage.stroke.Transparency = 1
+	ui.itemName.TextTransparency = 1
+	ui.itemName.stroke.Transparency = 1
 
-	ui.Size = UDim2.fromOffset(96, 96)
-	ui.Parent = Players.LocalPlayer.PlayerGui.notification
+	ui.percentage.Text = `{math.round(percentage*100000)/1000}%`
+	ui.Position = UDim2.new(.5, 0, 1, 0)
+	ui.Visible = true
 
 	tween.instance(ui, {
-		Size = UDim2.fromOffset(400, 96),
-	}, 0.3, "Expo")
+		Position = UDim2.new(.5, 0, 0, 20)
+	}, .2, "EntranceExpressive").Completed:Wait()
+	task.wait(1)
+	tween.instance(ui, {
+		ImageColor3 = Color3.fromRGB(255, 255, 255)
+	}, .2, "EntranceExpressive")
+	tween.instance(ui.shine, {
+		ImageColor3 = Color3.fromRGB(255, 255, 255)
+	}, .2, "EntranceExpressive").Completed:Wait()
+	tween.instance(ui.itemName, {
+		TextTransparency = 0
+	}, .2, "EntranceExpressive")
+	tween.instance(ui.itemName.stroke, {
+		Transparency = 0
+	}, .2, "EntranceExpressive")
+
+	tween.instance(ui.percentage, {
+		TextTransparency = 0
+	}, .2, "EntranceExpressive")
+	tween.instance(ui.percentage.stroke, {
+		Transparency = 0
+	}, .2, "EntranceExpressive")
 
 	self.renderClock = os.clock()
 	self.rendered = true
@@ -125,7 +147,6 @@ function notifClass:message(message: string, color: Color3?)
 	ui.Text = message
 	ui.TextTransparency = 1
 	ui.stroke.Transparency = 1
-	
 	ui.Parent = Players.LocalPlayer.PlayerGui.notification
 
 	tween.instance(ui, {
@@ -186,7 +207,7 @@ end
 return {
 	new = new,
 	load = function()
-		playerDataHandler:connect({ "inventory", "weapon" }, function(change)
+		--[[playerDataHandler:connect({ "inventory", "weapon" }, function(change)
 			local obtained = playerDataHandler:findChanges(change)
 			if not obtained then
 				return
@@ -194,22 +215,18 @@ return {
 			for _, dat in pairs(obtained.added) do
 				--id = tonumber(id)
 				local id = dat.id
-				local newlyObtained = true
-				local occurance = 0
-				for _, index in pairs(playerDataHandler:getPlayer().data.stats.obtainedItemIndex.weapon) do
-					if index == id then
-						if occurance > 0 then
-							newlyObtained = false
-							break
-						end
-						occurance += 1
-					end
-				end
-				settings.playSound(ReplicatedStorage.resources.ui_sound_effects["Item Notification"])
-				new():itemObtained(id, "weapon", newlyObtained)
-			end
-		end)
 
+				settings.playSound(ReplicatedStorage.resources.ui_sound_effects["Item Notification"])
+				new():itemObtained(id, "weapon", )
+			end
+		end)]]
+
+		bridges.itemObtained:Connect(function(id: number, type: "weapon" | "hero", percentage: number)
+			print(id, type, percentage)
+			Promise.try(function()
+				new():itemObtained(id, type, percentage)
+			end)
+		end)
 		bridges.notifError:Connect(function(message)
 			new():error(message)
 		end)
@@ -220,6 +237,9 @@ return {
 		RunService.Heartbeat:Connect(function(deltaTime)
 			local now = os.clock()
 			for _, self in pairs(notifObjects) do
+				if self.ui and self.type == "itemObtained" and self.ui:FindFirstChild("shine") then
+					self.ui.shine.Rotation += 30 * deltaTime
+				end
 				if self.renderClock and now - self.renderClock > 5 then
 					self:Destroy()
 				end

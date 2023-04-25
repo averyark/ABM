@@ -25,14 +25,17 @@ local Astrax = require(ReplicatedStorage.Packages.Astrax)
 local module = require(Astrax.module)
 local objects = require(Astrax.objects)
 local debugger = require(Astrax.debugger)
+local debug3d = require(Astrax.workspaceDebugManifest)
 
 local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local weapons = require(ReplicatedStorage.shared.weapons)
 local rarities = require(ReplicatedStorage.shared.rarities)
-
+local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 local settings = require(script.Parent.Parent.interface.settings)
+local pass = require(script.Parent.Parent.passHandler)
+local notifications = require(script.Parent.Parent.interface.notifications)
 
 local player = Players.LocalPlayer
 local entityTemplate = ReplicatedStorage.resources.droppedEntity
@@ -121,7 +124,15 @@ function droppedEntityClass:render()
 
 	self._maid:Add(bodyVelocity)
 	self._maid:Add(self.object)
+	self._maid:Add(self.errDebounce)
 	table.insert(droppedEntityObjects, self)
+
+	local workspaceDebug = debug3d.new(self.object)
+
+	workspaceDebug:linkMetatable(self, {"type", "amount"})
+
+	--self._maid:Add(workspaceDebug)
+
 end
 
 function droppedEntityClass:bounce()
@@ -137,6 +148,34 @@ end
 function droppedEntityClass:collect()
 	if self.collected then
 		return
+	end
+
+	local rType, id = unpack(self.type:split("/"))
+
+	if rType == "weapon" then
+		
+		local playerData = playerDataHandler.getPlayer()
+
+		local hasInfinite = pass.ownPass("InfiniteInventory")
+		local hasSwordSpace = pass.ownPass("50SwordSlots")
+		local hasVIP = pass.ownPass("VIP")
+		local max = 20 +
+			(hasSwordSpace and 50 or 0) +
+			(hasVIP and 25 or 0)
+
+		if not hasInfinite and #playerData.data.inventory.weapon+1 > max then
+			if not self.errDebounce:isLocked() then
+				self.errDebounce:lock()
+			
+				notifications.new():error(`Error: Insufficient Inventory Space! Trash { #playerData.data.inventory.hero - max} Sword(s) or purchase the gamepass.`)
+				--[[pass.promptPassPurchase(self.ownership,
+					if hasVIP and hasSwordSpace then "InfiniteInventory"
+							elseif hasVIP then "VIP"
+							else  "50SwordSlots"
+				)]]
+			end
+			return
+		end
 	end
 
 	debugger.assert(t.instanceIsA("Model")(player.Character))
@@ -281,6 +320,8 @@ local new = function(
 		dispensePower = droppedEntityDispensePower,
 		expireInterval = droppedEntityExpireInterval,
 		amount = amount,
+
+		errDebounce = debounce.new(debounce.type.Timer, 5),
 
 		collected = false,
 	})

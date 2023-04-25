@@ -30,6 +30,8 @@ local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 
+local interface = require(script.Parent.Parent.interface.main)
+
 local movement = require(script.Parent.movement)
 
 local sprint = {}
@@ -38,6 +40,8 @@ local usingWeaponState = false
 local sprintKeyDown = false
 local isSprinting = false
 local character: typeof(Players.LocalPlayer.Character)
+local isUiFocusing = false
+sprint.speed = 16
 
 local tweenObject1, tweenObject2
 
@@ -67,9 +71,12 @@ local beginSprint = function()
 	tweenObject1 = tween.instance(humanoid, {
 		WalkSpeed = defaultWalkSpeed + 8,
 	}, 0.5, "Cubic")
-	tweenObject2 = tween.instance(workspace.CurrentCamera, {
-		FieldOfView = 80,
-	}, 0.5, "Cubic")
+	if not isUiFocusing then
+		tweenObject2 = tween.instance(workspace.CurrentCamera, {
+			FieldOfView = 80,
+		}, 0.4, "Cubic")
+	end
+
 
 	movement.sprinting(true)
 end
@@ -99,9 +106,11 @@ local endSprint = function()
 	tweenObject1 = tween.instance(humanoid, {
 		WalkSpeed = defaultWalkSpeed,
 	}, 0.5, "Cubic")
-	tweenObject2 = tween.instance(workspace.CurrentCamera, {
-		FieldOfView = 70,
-	}, 0.5, "Cubic")
+	if not isUiFocusing then
+		tweenObject2 = tween.instance(workspace.CurrentCamera, {
+			FieldOfView = 70,
+		}, 0.4, "Cubic")
+	end
 
 	movement.sprinting(false)
 end
@@ -117,11 +126,36 @@ end
 
 function sprint:load()
 	local player = Players.LocalPlayer
+
+	interface.hiding:Connect(function()
+		isUiFocusing = false
+		task.defer(function()
+			if not isUiFocusing and isSprinting then
+				tweenObject2 = tween.instance(workspace.CurrentCamera, {
+					FieldOfView = 80,
+				}, 0.4, "Cubic")
+			end
+		end)
+	end)
+
+	interface.showing:Connect(function()
+		isUiFocusing = true
+		if tweenObject1 then
+			tweenObject1:Destroy()
+			tweenObject1 = nil
+		end
+		if tweenObject2 then
+			tweenObject2:Destroy()
+			tweenObject2 = nil
+		end
+	end)
+
 	player.CharacterAdded:Connect(function(char)
 		isSprinting = false
 		usingWeaponState = false
 		character = char
 		character:WaitForChild("Humanoid"):GetAttributeChangedSignal("defaultWalkSpeed"):Connect(function()
+			sprint.speed = character.Humanoid:GetAttribute("defaultWalKSpeed")
 			if isSprinting then
 				tween.instance(character.Humanoid, {
 					WalkSpeed = character.Humanoid:GetAttribute("defaultWalKSpeed") + 8,
@@ -138,6 +172,7 @@ function sprint:load()
 		usingWeaponState = false
 		character = player.Character
 		character:WaitForChild("Humanoid"):GetAttributeChangedSignal("defaultWalkSpeed"):Connect(function()
+			sprint.speed = character.Humanoid:GetAttribute("defaultWalKSpeed")
 			if isSprinting then
 				tween.instance(character.Humanoid, {
 					WalkSpeed = character.Humanoid:GetAttribute("defaultWalKSpeed") + 8,

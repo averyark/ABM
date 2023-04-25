@@ -126,7 +126,7 @@ local clientEntityClass = objects.new(clientEntityClassTable, {})
 local new = function(entityModel)
 	local animationsIds = bridges.requestEntityAnimationIds:InvokeServerAsync(entityModel)
 
-	debugger.assert(t.table(animationsIds))
+	if not animationsIds then return  end
 
 	return clientEntityClass
 		:new({
@@ -199,7 +199,9 @@ return {
 			--damageText:Destroy()
 		end)
 		bridges.entityDied:Connect(function(entityModel)
-			clientEntityObjects[entityModel]:died()
+			if clientEntityObjects[entityModel] then
+				clientEntityObjects[entityModel]:died()
+			end
 		end)
 
 		gameFolders.entities.ChildAdded:Connect(new)

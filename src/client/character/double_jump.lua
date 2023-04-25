@@ -178,11 +178,10 @@ local initializeCharacter = function(character)
 		if new == Enum.HumanoidStateType.Landed then
 			if old == Enum.HumanoidStateType.Freefall then
 				local velocity = math.abs(character.HumanoidRootPart.AssemblyLinearVelocity.Y)
-				print("HIT GROUND VELOCITY:", velocity)
 				if velocity > 80 then
 					local pos = getLandPosition(character)
 					if pos then
-						land(Players.LocalPlayer, pos, velocity)
+						task.spawn(land, Players.LocalPlayer, pos, velocity)
 					end
 				end
 			end

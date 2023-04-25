@@ -31,6 +31,8 @@ local tween = require(ReplicatedStorage.shared.tween)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 local weapons = require(ReplicatedStorage.shared.weapons)
 local upgrade = require(script.Parent.upgrade)
+local ascension = require(ReplicatedStorage.shared.ascension)
+local pass = require(script.Parent.pass)
 
 local bridges = {
     clientClicked = BridgeNet.CreateBridge("clientClicked")
@@ -78,7 +80,10 @@ return {
             end
 
             p:apply(function()
-                p.data.coins += math.random(1, 3) * a.coin * (1 + upgrade.getValueFromUpgrades(player, "Coin Magnet"))
+                p.data.coins += math.random(1, 3) * a.coin * (
+                    upgrade.getValueFromUpgrades(player, "Coin Magnet")
+                    + ascension.getCoinMultiplier(p.data.ascension)
+                ) * (pass.hasPass(player, "2xCoin") and 2 or 1)
             end)
         end)
         

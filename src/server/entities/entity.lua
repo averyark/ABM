@@ -32,9 +32,10 @@ local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local SimplePath = require(ReplicatedStorage.shared.SimplePath)
 local weapons = require(ReplicatedStorage.shared.weapons)
-
+local quest = require(script.Parent.Parent.systems.quest)
 local entities = require(script.Parent.entities)
 local upgrade = require(script.Parent.Parent.systems.upgrade)
+local pass = require(script.Parent.Parent.systems.pass)
 
 local entity = { __DEBUG__ENABLED = false }
 local entityModule = {}
@@ -46,6 +47,7 @@ local bridges = {
 	entityDamaged = BridgeNet.CreateBridge("entityDamaged"),
 	entityDied = BridgeNet.CreateBridge("entityDied"),
 	playEntitySound = BridgeNet.CreateBridge("playEntitySound"),
+	notifMessage = BridgeNet.CreateBridge("notifMessage")
 }
 
 local resources = ReplicatedStorage.resources.combat_resources
@@ -123,16 +125,6 @@ end
 
 function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
 	if knockback then
-		local bodyVelocity = Instance.new("BodyVelocity")
-		bodyVelocity.Parent = self.rootpart
-		bodyVelocity.MaxForce = hugeVector
-		bodyVelocity.P = 1000
-		bodyVelocity.Velocity = Vector3.new(
-			playerCFrame.lookVector.X * knockback,
-			knockback,
-			playerCFrame.lookVector.Z * knockback
-		)
-
 		self.lastAttacker = player
 		self.entity.Humanoid:TakeDamage(damage)
 		bridges.entityDamaged:FireAllInRange(self.rootpart.Position, 100, self.entity, player, damage, damageType)
@@ -144,6 +136,18 @@ function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
 			self._canUpdateState = false
 			self.humanoid.WalkSpeed = 0
 		end
+
+		local kb = math.max(realKnockback, 0)
+		local bodyVelocity = Instance.new("BodyVelocity")
+		bodyVelocity.Parent = self.rootpart
+		bodyVelocity.MaxForce = hugeVector
+		bodyVelocity.P = 1000
+		bodyVelocity.Velocity = Vector3.new(
+			playerCFrame.lookVector.X * kb,
+			kb,
+			playerCFrame.lookVector.Z * kb
+		)
+
 		task.wait(0.1)
 		bodyVelocity:Destroy()
 		task.wait(realKnockback / 50)
@@ -474,8 +478,12 @@ entityModule.new = function(id: number, cf: CFrame)
 		monster.onDeath:Connect(function(killer)
 			monster.isDead = true
 			local xpReward = math.random(monster.data.expDrop.min, monster.data.expDrop.max) * (1 + upgrade.getValueFromUpgrades(killer, "Fast Learner"))
+			quest.enemySlain_incrementQuestProgress(killer, monster.data.name)
 			droppedEntityHandler.bulk(killer, "xp", 10, xpReward/10, monster.entity.HumanoidRootPart.Position)
-			if math.random() < 0.4 + upgrade.getValueFromUpgrades(killer, "Luck") then
+			local getChance = math.random()
+			local playerChance = 0.3 + upgrade.getValueFromUpgrades(killer, "Luck")
+
+			local drop = function()
 				local chance = math.random() * 100
 				local v = 0
 				local selected
@@ -486,6 +494,12 @@ entityModule.new = function(id: number, cf: CFrame)
 					return a < b
 				end)
 
+				local total = 0
+
+				for _, p in pairs(monster.data.drops) do
+					total += p
+				end
+
 				for name, dropChance in pairs(monster.data.drops) do
 					if chance <= v + dropChance then
 						selected = name
@@ -495,7 +509,15 @@ entityModule.new = function(id: number, cf: CFrame)
 				end
 
 				local dropId = weapons[selected].id
-				droppedEntityHandler.one(killer, "weapon/" .. dropId, 1, monster.entity.HumanoidRootPart.Position)
+				local drop = droppedEntityHandler.one(killer, "weapon/" .. dropId, 1, monster.entity.HumanoidRootPart.Position)
+				drop.percentage = (monster.data.drops[selected]/total) * (playerChance + (pass.hasPass(killer, "Luck") and 0.1 or 0))
+			end
+
+			if getChance < playerChance then
+				drop()
+			elseif getChance < playerChance + (pass.hasPass(killer, "Luck") and 0.1 or 0) then
+				bridges.notifMessage:FireTo(killer, "You're feeling lucky")
+				drop()
 			end
 			monster.entity.HumanoidRootPart.Anchored = true
 			for _, object in pairs(monster.entity:GetDescendants()) do
@@ -592,12 +614,17 @@ function entityModule:load()
 
 			for _, player in pairs(Players:GetPlayers()) do
 				local character = player.Character
-				if not character or not character:FindFirstChild("HumanoidRootPart") then
-					return
-				end
+				if not character then continue end
+
+				local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+				local humanoid = character:FindFirstChild("Humanoid")
+
+				if not humanoid or not humanoidRootPart then continue end
+				if humanoid.Health < 1 then continue end
+
 				table.insert(validCharacters, character)
 
-				local rootpartPosition = player.Character.HumanoidRootPart.Position
+				local rootpartPosition = humanoidRootPart.Position
 				-- Determine if the target is inside of the detection range (relative to spawnPosition of the entity)
 				local playerDistanceFromEntitySpawn = (rootpartPosition - monsterEntity._spawnCFrame.Position).Magnitude
 
@@ -609,7 +636,7 @@ function entityModule:load()
 				local vector = rootpartPosition - monsterEntity.rootpart.Position
 				local magnitude = vector.Magnitude
 
-				if magnitude < monsterEntity.data.rangeOfAttack then
+				if monsterEntity.target and magnitude < monsterEntity.data.rangeOfAttack then
 					if monsterEntity.pathfinding._status ~= "Idle" then
 						monsterEntity.pathfinding:Stop()
 					end
@@ -621,7 +648,7 @@ function entityModule:load()
 					and not monsterEntity.resetPathFindingDebounce:isLocked()
 				then
 					monsterEntity.resetPathFindingDebounce:lock()
-					monsterEntity.pathfinding:Run(monsterEntity.target.HumanoidRootPart)
+					monsterEntity.pathfinding:Run(humanoidRootPart)
 				elseif magnitude < monsterEntity.data.visualDistance then
 					if
 						math.deg(math.acos(monsterEntity.head.CFrame.LookVector:Dot(vector.Unit)))
@@ -633,7 +660,7 @@ function entityModule:load()
 				if monsterEntity.gyro.Parent ~= nil and monsterEntity.target then
 					monsterEntity.gyro.CFrame = CFrame.lookAt(
 						monsterEntity.rootpart.Position,
-						monsterEntity.target.HumanoidRootPart.Position
+						humanoidRootPart.Position
 					)
 				end
 			end

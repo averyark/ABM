@@ -57,7 +57,7 @@ return {
         multiplier = 4.2,
     },
     [10] = {
-        requirement = 1638000,
+        requirement = 3680000,
         multiplier = 4.8,
     },
 

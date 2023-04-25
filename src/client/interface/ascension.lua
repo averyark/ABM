@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 local StarterPlayer = game:GetService("StarterPlayer")
+local ContentProvider = game:GetService("ContentProvider")
 
 local BridgeNet = require(ReplicatedStorage.Packages.BridgeNet)
 local Janitor = require(ReplicatedStorage.Packages.Janitor)
@@ -45,7 +46,9 @@ return {
         local hud = playerGui:WaitForChild("hud")
         local activated = false
 
-        ReplicatedStorage.test2.Event:Connect(function(old, new)
+        ContentProvider:PreloadAsync({"rbxassetid://12801071347", "rbxassetid://12801147276", "rbxassetid://12003543830"})
+
+        BridgeNet.CreateBridge("onAscend"):Connect(function(old, new)
             main.unfocus()
             tween.instance(hud.currencies, {
                 Position = UDim2.new(0, -250, 0.5, -40),
@@ -135,7 +138,7 @@ return {
             ascension.icon.rays.Rotation = ascension.icon.rays.Rotation + 150*deltaTime
         end)
 
-        playerDataHandler:connect({"rebirth"}, function(changes)
+        playerDataHandler:connect({"ascension"}, function(changes)
             playerGui.hud.rebirth.rebirth.Text = changes.new
         end)
     end

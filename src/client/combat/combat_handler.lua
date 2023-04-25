@@ -36,6 +36,7 @@ local bridges = {
 	changeWeapon = BridgeNet.CreateBridge("changeWeapon"),
 	damageEntity = BridgeNet.CreateBridge("damageEntity"),
 	playEntitySound = BridgeNet.CreateBridge("playEntitySound"),
+	changeSecondaryWeapon = BridgeNet.CreateBridge("changeSecondaryWeapon"),
 }
 
 local combatHandler = {}
@@ -58,14 +59,12 @@ local animations = {
 		},
 	},
 	dual_wield = {
-		idle = resouces.one_sword_idle,
-		run = resouces.one_sword_run,
-		walk = resouces.one_sword_walk,
+		idle = resouces.dual_sword_idle,
+		run = resouces.dual_sword_run,
+		walk = resouces.dual_sword_walk,
 		combo = {
-			resouces.one_sword_verticalSlash1,
-			resouces.one_sword_horizontalSlash,
-			resouces.one_sword_diagonalSlash,
-			resouces.one_sword_verticalSlash2,
+			resouces.dual_sword_diagonalSlash,
+			resouces.dual_sword_horizontalSlash,
 		},
 	},
 }
@@ -98,15 +97,24 @@ local playSound = function(id, parent)
 	end)
 end
 
-local attackSpeed = 0.2
+local attackSpeed = 0.33
 
-function clientWeaponTable:equip()
+local current
+
+function clientWeaponTable:Destroy()
+	if current then
+		current = nil
+	end
+	self._maid:Destroy()
+end
+
+function clientWeaponTable:updateAnim()
 	self.humanoid = self.character:WaitForChild("Humanoid") :: Humanoid
 	self.animator = self.humanoid:WaitForChild("Animator") :: Animator
 
-	local idle = animations[self.data.class].idle
-	local walk = animations[self.data.class].walk
-	local run = animations[self.data.class].run
+	local idle = animations[self.class].idle
+	local walk = animations[self.class].walk
+	local run = animations[self.class].run
 
 	local characterAnimationScript = self.character:WaitForChild("Animate")
 
@@ -115,7 +123,9 @@ function clientWeaponTable:equip()
 	characterAnimationScript.idle.Animation1.AnimationId = idle.AnimationId
 	characterAnimationScript.idle.Animation2.AnimationId = idle.AnimationId
 
-	for name, anim in pairs(animations[self.data.class].combo) do
+	table.clear(self.animationsTracks.combo)
+
+	for name, anim in pairs(animations[self.class].combo) do
 		self.animationsTracks.combo[name] = self.animator:LoadAnimation(anim)
 		self.animationsTracks.combo[name].Looped = false
 	end
@@ -134,13 +144,19 @@ function clientWeaponTable:activate()
 	sprint.usingWeapon(true)
 
 	local attackAnimation = self.animationsTracks.combo[self.combo]
-	local multi = attackSpeed/attackAnimation.Length
-	attackAnimation:AdjustSpeed(multi)
-	
+	local multi = attackAnimation.Length/attackSpeed--attackSpeed/attackAnimation.Length
 	attackAnimation:Play()
+	attackAnimation:AdjustSpeed(multi)
+
 	self.hitboxClass:HitStart()
+	if self.weapon2hitboxClass then
+		self.weapon2hitboxClass:HitStart()
+	end
 
 	self.weapon.Handle.AttackTrail.Enabled = true
+	if self.weapon2 then
+		self.weapon2.Handle.AttackTrail.Enabled = true
+	end
 	self.comboExpired:lock()
 	self.basicAttackDebounce:lock(attackSpeed)
 
@@ -157,8 +173,14 @@ function clientWeaponTable:activate()
 			return
 		end
 		self.weapon.Handle.AttackTrail.Enabled = false
+		if self.weapon2 then
+			self.weapon2.Handle.AttackTrail.Enabled = false
+		end
 		sprint.usingWeapon(false)
 		self.hitboxClass:HitStop()
+		if self.weapon2hitboxClass then
+			self.weapon2hitboxClass:HitStop()
+		end
 		task.wait(0.3)
 		if self.basicAttackIncrements ~= cacheattackid then
 			return
@@ -172,50 +194,69 @@ function clientWeaponTable:start()
 	self.hitboxClass.RaycastParams.FilterType = Enum.RaycastFilterType.Whitelist
 	self.hitboxClass.RaycastParams.FilterDescendantsInstances = { workspace.gameFolders.entities }
 	self.hitboxClass.Visualizer = false
+
 	self._maid:Add(self.weapon.Equipped:Connect(function()
-		self:equip()
+		self:updateAnim()
 	end))
 	self._maid:Add(self.weapon.Activated:Connect(function()
 		self:activate()
 	end))
-	self.hitboxClass.OnHit:Connect(function(...)
+	self._maid:Add(self.hitboxClass.OnHit:Connect(function(...)
 		self.hit:Fire(...)
-	end)
+	end), "Disconnect")
 
-	local animator = self.character.Humanoid.Animator
-	local walk = animations[self.data.class].walk
-	local run = animations[self.data.class].run
-	local walkAnim, runAnim = animator:LoadAnimation(walk), animator:LoadAnimation(run)
-	local isRunPlaying = false
-
-	walkAnim.Priority = Enum.AnimationPriority.Movement
-	runAnim.Priority = Enum.AnimationPriority.Movement
-
-	self.character.Humanoid.Running:Connect(function(speed)
-		if speed > 18 then
-			if isRunPlaying then
-				return
-			end
-			walkAnim:Stop()
-			runAnim:Play(0.5)
-			isRunPlaying = true
-		elseif speed <= 18 and speed > 0 then
-			runAnim:Stop()
-			walkAnim:Play(0.5)
-			isRunPlaying = false
+	local update = function()
+		if self.character:FindFirstChild("secondary") then
+			self.class = "dual_wield"
+			self.weapon2 = self.character.secondary
+			self.weapon2hitboxClass = RaycastHitbox.new(self.weapon2.Handle)
+			self.weapon2hitboxClass.RaycastParams = RaycastParams.new()
+			self.weapon2hitboxClass.RaycastParams.FilterType = Enum.RaycastFilterType.Whitelist
+			self.weapon2hitboxClass.RaycastParams.FilterDescendantsInstances = { workspace.gameFolders.entities }
+			self.weapon2hitboxClass.Visualizer = false
+			self._maid:Add(self.weapon2hitboxClass)
 		else
-			runAnim:Stop()
-			walkAnim:Stop()
-			isRunPlaying = false
+			if self.weapon2hitboxClass and self.weapon2hitboxClass.Destroy then
+				self.weapon2hitboxClass:Destroy()
+				self.weapon2hitboxClass = nil
+			end
+			self.class = "single_wield"
+			self.weapon2 = nil
 		end
-	end)
-	self.character.Humanoid.StateChanged:Connect(function(old, new)
-		if new ~= Enum.HumanoidStateType.Running or new ~= Enum.HumanoidStateType.RunningNoPhysics then
-			runAnim:Stop()
-			walkAnim:Stop()
-			isRunPlaying = false
+		self:updateAnim()
+	end
+
+	self._maid:Add(BridgeNet.CreateBridge("changeSecondaryWeapon"):Connect(function(id, weapon)
+		if self.weapon2hitboxClass and self.weapon2hitboxClass.Destroy then
+			self.weapon2hitboxClass:Destroy()
 		end
-	end)
+		self.class = "dual_wield"
+		self.weapon2 = weapon
+		self.weapon2hitboxClass = RaycastHitbox.new(self.weapon2.Handle)
+		self.weapon2hitboxClass.RaycastParams = RaycastParams.new()
+		self.weapon2hitboxClass.RaycastParams.FilterType = Enum.RaycastFilterType.Whitelist
+		self.weapon2hitboxClass.RaycastParams.FilterDescendantsInstances = { workspace.gameFolders.entities }
+		self.weapon2hitboxClass.Visualizer = true
+		self._maid:Add(self.weapon2hitboxClass)
+		self:updateAnim()
+	end), "Disconnect")
+
+	self._maid:Add(self.character.ChildRemoved:Connect(function(child)
+		if child.Name == "secondary" then
+			if self.weapon2hitboxClass and self.weapon2hitboxClass.Destroy then
+				self.weapon2hitboxClass:Destroy()
+				self.weapon2hitboxClass = nil
+			end
+			if self.weapon2 == child then
+				self.class = "single_wield"
+				self.weapon2 = nil
+			end
+		end
+		--update()
+	end))
+
+	update()
+
 	self._maid:Add(self.hitboxClass)
 end
 
@@ -236,6 +277,8 @@ function new(id: number, weaponTool: Tool)
 		data = data,
 		character = Players.LocalPlayer.Character,
 
+		class = "single_wield",
+
 		basicAttackDebounce = debounce.new(debounce.type.Timer, data.basicAttackCooldown),
 		comboExpired = debounce.new(debounce.type.Boolean),
 		hitboxClass = RaycastHitbox.new(weaponTool),
@@ -250,14 +293,19 @@ end
 function combatHandler:load()
 	bridges.changeWeapon:Fire()
 	bridges.changeWeapon:Connect(function(...)
+		print(..., current)
+		if current then
+			current:Destroy()
+			current = nil
+		end
 		local weapon = new(...)
 		weapon:start()
-		weapon.hit:Connect(function(target)
+		weapon._maid:Add(weapon.hit:Connect(function(target)
 			if target.Parent:FindFirstChild("Humanoid") then
 				playSound("hit", target)
 				bridges.damageEntity:Fire(target.Parent, weapon.character.HumanoidRootPart.CFrame)
 			end
-		end)
+		end))
 	end)
 	bridges.playEntitySound:Connect(function(part, sound)
 		if sound:FindFirstChild("pitch") then

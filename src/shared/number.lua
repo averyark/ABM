@@ -116,6 +116,12 @@ local decimalList = {
 	"Hundred-Trillionths",
 }
 
+local suffix = {
+	["1"] = "st",
+	["2"] = "nd",
+	["3"] = "rd",
+}
+
 --[[
 	Returns a string abbreviation of the number.
 	```lua
@@ -137,6 +143,11 @@ mathUtil.abbreviate = function(n: number, precision: number?): string
 	return ("%." .. precision :: number .. "f%s"):format(norm, suffix)
 end
 
+
+mathUtil.suffix = function(n: number)
+	local strn = tostring(n)
+	return mathUtil.commaFormat(n) .. (suffix[strn:sub(string.len(strn), -1)] or "th")
+end
 --[[
 	Returns a roman numeral representation of the number.
 	```lua

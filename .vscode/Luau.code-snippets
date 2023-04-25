@@ -27,6 +27,7 @@
             "local module = require(Astrax.module)",
             "local objects = require(Astrax.objects)",
             "local debugger = require(Astrax.debugger)",
+            "local workspaceDebugManifest = require(Astrax.workspaceDebugManifest)",
             "",
             "local debounce = require(ReplicatedStorage.shared.debounce)",
             "local number = require(ReplicatedStorage.shared.number)",

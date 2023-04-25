@@ -109,8 +109,18 @@ if RunService:IsServer() then
 		xp = 0,
 		level = 0,
 		rebirth = 0,
+		ascension = 1,
+		currentWorld = 1,
+		lastDailyGift = 0,
+		dailyGiftStreak = 0,
+
+		quest = {
+			name = nil,
+			progress = 0,
+		},
 		equipped = {
 			weapon = 1,
+			hero = {},
 		},
 		unlockedWorlds = {
 			1
@@ -132,7 +142,11 @@ if RunService:IsServer() then
 					level = 0,
 				},
 			},
+			hero = {
+
+			}
 		},
+		gifts = {},
 		stats = {
 			obtainedItemIndex = {
 				weapon = {
@@ -141,6 +155,7 @@ if RunService:IsServer() then
 			},
 			itemsObtained = {
 				weapon = 1,
+				hero = 0,
 			},
 			xpCollected = 0,
 			coinsCollected = 0,

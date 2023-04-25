@@ -30,6 +30,8 @@ local tween = require(ReplicatedStorage.shared.tween)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 local upgrades = require(ReplicatedStorage.shared.upgrades)
 local levels = require(ReplicatedStorage.shared.levels)
+local ascension = require(ReplicatedStorage.shared.ascension)
+local heros = require(ReplicatedStorage.shared.heros)
 
 local getValueFromUpgrades = function(upgradeType)
     local playerData = playerDataHandler.getPlayer()
@@ -60,9 +62,11 @@ return {
                 end)
             end,
             coinsMultiplier = function()
-                playerDataHandler:connect({"upgrades"}, function()
-                    changeStat("coinsMultiplier", ("x%.2f"):format(1 + getValueFromUpgrades("Coin Magnet")))
-                end)
+                local changed = function()
+                    changeStat("coinsMultiplier", ("x%.2f"):format(1 + getValueFromUpgrades("Coin Magnet") + ascension.getCoinMultiplier(playerDataHandler.getPlayer().data.ascension)))
+                end
+                playerDataHandler:connect({"upgrades"}, changed)
+                playerDataHandler:connect({"ascension"}, changed)
             end,
             jump = function()
                 changeStat("jump", 2)
@@ -83,15 +87,43 @@ return {
             coinsCollected = function()
                 
             end,
-            rebirth = function()
-                
+            ascension = function()
             end,
             damageMultiplier = function()
-                local changed = function()
-                    changeStat("damageMultiplier", ("x%s"):format(getValueFromUpgrades("Power Gain") + levels[playerDataHandler.getPlayer().data.level].multiplier ))
+                local data = playerDataHandler.getPlayer().data
+                local findItemWithIndexId = function(tbl, id)
+                    for _, dat in pairs(tbl) do
+                        if dat.index == id then
+                            return dat
+                        end
+                    end
                 end
+                local find = function<t>(id: t & number): typeof(heros[t])
+                    for _, dat in pairs(heros) do
+                        if dat.id == id then
+                            return dat
+                        end
+                    end
+                    return nil
+                end
+                local getTotalMulti = function()
+                    local m = 0
+                    for _, indexId in pairs(data.equipped.hero) do
+                        m += find(findItemWithIndexId(data.inventory.hero, indexId).id).multiplier 
+                    end
+                    return m
+                end
+                local changed = function()
+                    changeStat("damageMultiplier", ("x%s"):format(
+                        getValueFromUpgrades("Power Gain")
+                        + getTotalMulti()
+                        + levels[playerDataHandler.getPlayer().data.level].multiplier
+                        + ascension.getPowerMultiplier(playerDataHandler.getPlayer().data.ascension)))
+                end
+                playerDataHandler:connect({"ascension"}, changed)
                 playerDataHandler:connect({"upgrades"}, changed)
                 playerDataHandler:connect({"level"}, changed)
+                playerDataHandler:connect({"equipped", "hero"}, changed)
             end,
             luck = function()
                 playerDataHandler:connect({"upgrades"}, function()
