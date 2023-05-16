@@ -48,6 +48,8 @@ local animationIds = {
 local meta = {}
 meta.__index = meta
 
+local new
+
 local getPointOnCircle = function(circle_radius, degrees)
 	local a = math.cos(degrees) * circle_radius
 	local b = math.sin(degrees) * circle_radius
@@ -56,17 +58,39 @@ end
 --GetPointOnCircle(5, i * (math.pi*2 / #Character.pets_folder:GetChildren()))
 
 function meta:Destroy()
-   self._maid:Destroy()
+    if self.model then
+        --self.model:Destroy()
+        self.model = nil
+    end
+    self._maid:Destroy()
 end
+
+local raycastParams = RaycastParams.new()
+raycastParams.RespectCanCollide = true
+
+local bottom = Vector3.FromNormalId(Enum.NormalId.Bottom)*3
 
 function meta:getDesiredPosition()
     if not self.index then return end
-    local equipped = playerDataHandler.getPlayer(self.player).data.equipped.hero
+    local equipped = self.equipped.hero
+    local index = table.find(equipped, self.index)
+    if not index then
+        return self:Destroy()
+    end
     local point = getPointOnCircle(
         6,
-        table.find(equipped, self.index) * (math.pi*2 / #equipped)
+         index * (math.pi*2 / #equipped)
     )
-    return CFrame.new(self.player.Character.HumanoidRootPart.CFrame.Position) * CFrame.new(point)
+
+    local projected = CFrame.new(self.player.Character.HumanoidRootPart.CFrame.Position) * CFrame.new(point)
+
+    if not workspace:Raycast(projected.Position, bottom, raycastParams) then
+        return self.lastPosition or projected
+    end
+
+    self.lastPosition = projected
+
+    return projected
 end
 
 function meta:teleportToPlayer()
@@ -94,6 +118,8 @@ function meta:init()
 
     self.tag = ReplicatedStorage.resources.herotag:Clone()
     self.tag.Parent = self.model.HumanoidRootPart
+
+    self.equipped = playerDataHandler.getPlayer(self.player).data.equipped
 
     local rarityData = rarities[self.itemData.rarity]
 
@@ -126,8 +152,9 @@ function meta:init()
     self.pathFinding = SimplePath.new(self.model, {
         AgentCanJump = true,
 		AgentCanClimb = false,
-		AgentRadius = 4
+		AgentRadius = 1.5
     }, { JUMP_WHEN_STUCK = false })
+    self.pathFinding._settings.TIME_VARIANCE = 0.2
     self.pathFinding.Visualize = false
 
     self._maid:Add(self.pathFinding.Blocked:Connect(function()
@@ -139,13 +166,18 @@ function meta:init()
         end
         --warn(errorType)
 		--self:teleportToPlayer()
+        if self.pathFinding._status == SimplePath.StatusType.Active then
+            self.pathFinding:Stop()
+        end
 	end))
+    
 	self._maid:Add(self.pathFinding.WaypointReached:Connect(function()
 		self:moveToPlayer()
 	end))
     --self._maid:Add(self.model)
     self._maid:Add(self.pathFinding)
     self._maid:Add(self.chase)
+    --self._maid:Add(self.model)
 
     --[[local gyro = Instance.new("BodyGyro")
 	gyro.D = 150
@@ -158,6 +190,9 @@ function meta:init()
 
     self._maid:Add(RunService.Heartbeat:Connect(function()
         if not self.player.Character then return end
+        if not self.model then
+            return self:Destroy()
+        end
         local modelPosition = self.model.HumanoidRootPart.Position
         local characterPosition = self.player.Character.HumanoidRootPart.Position
         if characterPosition ~= self.positionCache then
@@ -184,6 +219,10 @@ function meta:init()
             self:Destroy()
         end
     end))
+    self._maid:Add(self.model.Humanoid.Died:Connect(function()
+        self:Destroy()
+        new(self.player, self.id, self.index)
+    end))
 
     bridges.initializeHeroOnClient:FireAll(self.player, self.id, self.model)
 
@@ -195,7 +234,7 @@ end
 
 local class = objects.new(meta, {})
 
-local new = function(player: Player, id: number, index: number)
+new = function(player: Player, id: number, index: number)
     return class:new({
         player = player,
         id = id,

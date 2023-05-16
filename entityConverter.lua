@@ -3,17 +3,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local targetHighlightModel = ReplicatedStorage.TargetHighlight:Clone()
 
-local damageboxSize = 2
-local hitboxSizeMultiplier = 1.5
+local damageboxSize = 3
+local hitboxSizeMultiplier = 2
 
 local makeHitbox = function (object: Model)
     local hitbox = Instance.new("Part")
     local cf, size = object:GetBoundingBox()
 
     hitbox.Name = "Hitbox"
-    hitbox.Size = size * Vector3.new(hitboxSizeMultiplier, hitboxSizeMultiplier, hitboxSizeMultiplier)
+    hitbox.Size = size * Vector3.new(hitboxSizeMultiplier, hitboxSizeMultiplier/1.5, hitboxSizeMultiplier*1.5)
     hitbox.CFrame = object.HumanoidRootPart.CFrame
-    hitbox.Transparency = 0.8
+    hitbox.Transparency = 1
     hitbox.CanCollide = false
     hitbox.Color = Color3.fromRGB(255, 0, 0)
 
@@ -36,7 +36,7 @@ local makeDamagebox = function (object: Model)
     damagebox.Name = "Damagebox"
     damagebox.Size = Vector3.one * damageboxSize
     damagebox.Position = rightArm.Position - rightArm.CFrame.UpVector * damageboxSize
-    damagebox.Transparency = 0.8
+    damagebox.Transparency = 1
     damagebox.CanCollide = false
     damagebox.Color = Color3.fromRGB(255, 0, 255)
 
@@ -60,7 +60,7 @@ local makeTargetHighlight = function (object: Model)
 
     targetHightlightClone.Position = Vector3.new(x, y - (object["Left Leg"].Size.Y/2), z)
     targetHightlightClone.Color = Color3.fromRGB(0, 0, 255)
-    targetHightlightClone.Transparency = 0.8
+    targetHightlightClone.Transparency = 1
 
     local weld = Instance.new("WeldConstraint")
     weld.Part0 = targetHightlightClone

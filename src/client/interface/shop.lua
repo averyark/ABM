@@ -220,12 +220,12 @@ function shop:load()
 			local p = percentage[tonumber(button.Name)]
 			if not p then continue end
 
-			local reward = ascension.getCost(changes.new+1)*p
+			local reward = ascension.getCost(changes.new)*p
 
 			button.reward.label.Text = number.abbreviate(reward, 0)
 		end
-		coin5.reward.label.Text = number.abbreviate(ascension.getCost(changes.new+1)*percentage[5], 0)
-		coin2.reward.label.Text = number.abbreviate(ascension.getCost(changes.new+1)*percentage[2], 0)
+		coin5.reward.label.Text = number.abbreviate(ascension.getCost(changes.new)*percentage[5], 0)
+		coin2.reward.label.Text = number.abbreviate(ascension.getCost(changes.new)*percentage[2], 0)
 	end)
 
 	local buyCoin = shopUi.Parent.hud.currencies.coins.button

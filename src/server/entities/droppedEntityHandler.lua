@@ -32,6 +32,7 @@ local tween = require(ReplicatedStorage.shared.tween)
 local weapons = require(ReplicatedStorage.shared.weapons)
 local pass = require(script.Parent.Parent.systems.pass)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
+local badges = require(script.Parent.Parent.systems.badges)
 
 local cleanupInterval = 0.5
 
@@ -65,7 +66,7 @@ function droppedEntityClass:register()
 	self.yPower = self.power * self.yPowerMultiplier
 	self.negativePower = -self.power
 
-	bridges.makeDroppedEntity:FireAll(
+	bridges.makeDroppedEntity:FireTo(self.ownership,
 		self.type,
 		self.id,
 		self.position,
@@ -93,10 +94,12 @@ function droppedEntityClass:collect()
 	if rType == "coin" then
 		playerDataHandler.getPlayer(self.ownership):apply(function(f)
 			f.data.coins += self.amount
+			f.data.stats.coinsCollected += self.amount
 		end)
 	elseif rType == "xp" then
 		playerDataHandler.getPlayer(self.ownership):apply(function(f)
 			f.data.xp += self.amount
+			f.data.stats.xpCollected += self.amount
 		end)
 	elseif rType == "weapon" then
 		local itemData = findItem(id)
@@ -118,6 +121,10 @@ function droppedEntityClass:collect()
 						else  "50SwordSlots"
 			)]]
 			return
+		end
+
+		if itemData.rarity == 4 then
+			badges.incrementProgress(self.ownership, "legendarySwordUnlocked", 1)
 		end
 
 		playerDataHandler.getPlayer(self.ownership):apply(function(f)

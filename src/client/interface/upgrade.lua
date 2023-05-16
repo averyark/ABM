@@ -105,7 +105,6 @@ end
 return {
     load = function()
         local ui = Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("boost")
-        local hitbox = workspace.gameFolders.upgrade.Hitbox
         local pageContainer = ui.mainframe.pages.lower
         local buttons =  ui.mainframe.buttons
 
@@ -133,7 +132,12 @@ return {
                         local data = upgrades.contents[worldIndex][upgradeId]
                         local frame =  pageContainer[tostring(worldIndex)][tostring(upgradeId)]
                         frame.bar.fill.Size = UDim2.fromScale(math.clamp(upgradeLevel/5, 0, 1), 1)
-                        frame.desc.Text = if data.values[upgradeLevel+1] then ("%s > %s"):format(data.getTxt(data.values[upgradeLevel] or 0), data.getTxt(data.values[upgradeLevel+1])) else data.getTxt(data.values[upgradeLevel] or 0)
+                        frame.desc.Text = if data.values[upgradeLevel+1] then ("%s > %s"):format(
+                                    data.getTxt(data.values[upgradeLevel] or 0),
+                                    data.getTxt(data.values[upgradeLevel+1])
+                                )
+                            else
+                                data.getTxt(data.values[upgradeLevel] or 0)
                         frame.button.cost.amount.Text = if data.cost[upgradeLevel+1] then number.abbreviate(data.cost[upgradeLevel+1], 2) else "MAX"
                     end
                 end
@@ -173,7 +177,7 @@ return {
 
         ContentProvider:PreloadAsync({"rbxassetid://12784077167"})
 
-        ReplicatedStorage.test1.Event:Connect(function(worldIndex)
+        --[[ReplicatedStorage.test1.Event:Connect(function(worldIndex)
             local frame = ui.mainframe.buttons:FindFirstChild(worldIndex)
             if not frame then return end
             frame.lock.unlock.ImageTransparency = 1
@@ -207,10 +211,9 @@ return {
                 BackgroundTransparency = 1,
             }, .2).Completed:Wait()
             frame.lock.Visible = false
-        end)
+        end)]]
 
         playerDataHandler:connect({"unlockedWorlds"}, function(changes)
-            print(changes, playerDataHandler:findChanges(changes))
             if not changes.old then
                 for index, worldIndex in pairs(changes.new) do
                     local frame = ui.mainframe.buttons:FindFirstChild(worldIndex)
@@ -219,7 +222,7 @@ return {
                     frame.lock.Visible = false
                 end
             else
-                for index, worldIndex in pairs(changes.new.unlockedWorlds) do
+                for index, worldIndex in pairs(changes.new) do
                     local frame = ui.mainframe.buttons:FindFirstChild(worldIndex)
                     if not frame then continue end
                     frame.lock.unlock.ImageTransparency = 1
@@ -283,26 +286,37 @@ return {
             end
         end
 
+        local hitboxes = {}
+
+        for _, upgradeStation in pairs(workspace.gameFolders.upgrade:GetChildren()) do
+            if upgradeStation:FindFirstChild("Hitbox") then
+                hitboxes[tonumber(upgradeStation.Name)] = upgradeStation.Hitbox
+            end
+        end
+
+        local isShowing = false
+
+        local data = playerDataHandler.getPlayer().data
+
         RunService.RenderStepped:Connect(function(deltaTime)
             local character = Players.LocalPlayer.Character
             if not character then return end
+            local charPos = character:GetPivot().Position
 
-            local overlapParam = OverlapParams.new()
+            local currentWorld = data.currentWorld
 
-            overlapParam.FilterType = Enum.RaycastFilterType.Include
-            overlapParam.FilterDescendantsInstances = {character, hitbox}
-
-            if #workspace:GetPartsInPart(hitbox, overlapParam) > 0 then
-                if not isInside then
-                    enteredUpgradeHitbox()
-                end
-            else
-                if isInside then
-                    exitedUpgradeHitbox()
-                end
+            local hitbox = hitboxes[currentWorld]
+            local center = hitbox.Position
+            local distanceFromCenter = (center - charPos).Magnitude
+            local radius = hitbox.Size.Y/2
+            
+            if distanceFromCenter < radius and not isShowing then
+                isShowing = true
+                interface.focus(ui, true)
+            elseif distanceFromCenter > radius+5 and isShowing then
+                isShowing = false
+                interface.unfocus()
             end
-
         end)
-
     end
 }

@@ -48,11 +48,6 @@ end
 
 return {
     load = function()
-        Players.PlayerAdded:Connect(regPlayer)
-
-        for _, player in pairs(Players:GetPlayers()) do
-            regPlayer(player)
-        end
-        
+      
     end
 }

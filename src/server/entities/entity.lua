@@ -36,6 +36,7 @@ local quest = require(script.Parent.Parent.systems.quest)
 local entities = require(script.Parent.entities)
 local upgrade = require(script.Parent.Parent.systems.upgrade)
 local pass = require(script.Parent.Parent.systems.pass)
+local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 
 local entity = { __DEBUG__ENABLED = false }
 local entityModule = {}
@@ -47,7 +48,8 @@ local bridges = {
 	entityDamaged = BridgeNet.CreateBridge("entityDamaged"),
 	entityDied = BridgeNet.CreateBridge("entityDied"),
 	playEntitySound = BridgeNet.CreateBridge("playEntitySound"),
-	notifMessage = BridgeNet.CreateBridge("notifMessage")
+	notifMessage = BridgeNet.CreateBridge("notifMessage"),
+	message = BridgeNet.CreateBridge("message"),
 }
 
 local resources = ReplicatedStorage.resources.combat_resources
@@ -56,7 +58,11 @@ local sounds = {
 		resources.sound_effects.punch1,
 		resources.sound_effects["punch 2"],
 	},
-	punchHit = resources.sound_effects["punch hit"],
+	punchHit = {
+		resources.sound_effects["punch hit1"],
+		resources.sound_effects["punch hit2"],
+		resources.sound_effects["punch hit3"],
+	},
 }
 
 local states = {
@@ -98,6 +104,9 @@ function entity:attack()
 	if self.state == states.moving then
 		return
 	end
+	if self.stunned then
+		return
+	end
 
 	self.onAttackBegin:Fire()
 
@@ -110,7 +119,8 @@ function entity:attack()
 
 	local num = math.random(1, #self.data.animations.AttackAnimations)
 	self:replicateAnimationToClient("Play", "AttackAnimations", num)
-	bridges.playEntitySound:FireAllInRange(self.rootpart.Position, 30, self.rootpart, sounds.punch[num])
+	bridges.playEntitySound:FireAllInRange(
+		self.rootpart.Position, 30, self.rootpart, sounds.punch[num])
 
 	self._attackAnimationLengths[num] = getAnimationLength(self.data.animations.AttackAnimations[num])
 
@@ -123,7 +133,15 @@ function entity:attack()
 	--task.wait(self.data.attackCooldown)
 end
 
+function entity:specialDamage(player, damage, damageType)
+	self.entity.Humanoid:TakeDamage(damage)
+	bridges.entityDamaged:FireAllInRange(self.rootpart.Position, 100, self.entity, player, damage, damageType)
+end
+
 function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
+	if self.entity.Humanoid.Health < 1 then
+		return
+	end
 	if knockback then
 		self.lastAttacker = player
 		self.entity.Humanoid:TakeDamage(damage)
@@ -152,7 +170,12 @@ function entity:takeDamage(player, damage, damageType, knockback, playerCFrame)
 		bodyVelocity:Destroy()
 		task.wait(realKnockback / 50)
 
-		self.humanoid.WalkSpeed = self.data.walkSpeed
+		if self.poisoned then
+			self.humanoid.WalkSpeed = self.data.walkSpeed - 6
+		else
+			self.humanoid.WalkSpeed = self.data.walkSpeed
+		end
+
 		if self.target or self.movingLocation then
 			self.pathfinding:Run(self.movingLocation or self.target.HumanoidRootPart)
 			self.resetPathFindingDebounce:lock()
@@ -174,6 +197,7 @@ function entity:playerHit(player)
 			return
 		end
 		table.insert(self._damagedPlayers, player)
+		--self.lastDamaged = os.clock()
 		self.onPlayerHit:Fire(player)
 	end
 end
@@ -251,6 +275,9 @@ function entity:isValidTarget(character)
 end
 
 function entity:moveTo(position: Vector3)
+	if self.stunned then
+		return
+	end
 	if not self._canUpdateState then
 		return
 	end
@@ -370,7 +397,7 @@ function entity:spawn(spawnCFrame: CFrame)
 
 	self.gyro = gyro
 
-	self:debug("Spawned entity", self.data.name, " to the world")
+	--self:debug("Spawned entity", self.data.name, " to the world")
 
 	self.onSpawn:Fire(self)
 	self:idle()
@@ -457,7 +484,7 @@ entityModule.new = function(id: number, cf: CFrame)
 				monster.rootpart.Position,
 				30,
 				player.Character.HumanoidRootPart,
-				sounds.punchHit
+				sounds.punchHit[math.random(1, #sounds.punchHit)]
 			)
 			player.Character.Humanoid:TakeDamage(monster.data.baseDamage)
 		end)
@@ -481,7 +508,12 @@ entityModule.new = function(id: number, cf: CFrame)
 			quest.enemySlain_incrementQuestProgress(killer, monster.data.name)
 			droppedEntityHandler.bulk(killer, "xp", 10, xpReward/10, monster.entity.HumanoidRootPart.Position)
 			local getChance = math.random()
-			local playerChance = 0.3 + upgrade.getValueFromUpgrades(killer, "Luck")
+			local playerChance = 0.4 + upgrade.getValueFromUpgrades(killer, "Luck")
+
+			if monster.data.isBoss then
+				playerChance = 1
+				getChance = 0
+			end
 
 			local drop = function()
 				local chance = math.random() * 100
@@ -510,7 +542,18 @@ entityModule.new = function(id: number, cf: CFrame)
 
 				local dropId = weapons[selected].id
 				local drop = droppedEntityHandler.one(killer, "weapon/" .. dropId, 1, monster.entity.HumanoidRootPart.Position)
+				if weapons[selected].rarity == 4 then
+					bridges.message:FireAll(`Omg! {killer.Name} got a legendary sword "{weapons[selected].name}"!!`, Color3.fromRGB(255, 50, 50))
+				end
 				drop.percentage = (monster.data.drops[selected]/total) * (playerChance + (pass.hasPass(killer, "Luck") and 0.1 or 0))
+			end
+
+			local killerData = playerDataHandler.getPlayer(killer)
+
+			if monster.data.isBoss then
+				if not table.find(killerData.data.bossDefeated, monster.data.id) then
+					table.insert(killerData.data.bossDefeated, monster.data.id)
+				end
 			end
 
 			if getChance < playerChance then

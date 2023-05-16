@@ -23,12 +23,15 @@ local index = {
 		autoPositionCanvas = true,
 		intervalFadeOutputMessage = 21,
 		fadeOutputMessage = false,
-		debugEnabled = true,
-		serverDebugEnabled = true,
-		debugConsoleEnabled = true,
+		debugEnabled = false,
+		serverDebugEnabled = false,
+		debugConsoleEnabled = false,
 		debugCommandsHandlerFolder = nil,
 		whitelisted = {
 			{ type = "userid", value = 540209459 },
+			{ type = "userid", value = 62286926 },
+			{ type = "userid", value = 3675031237 },
+			{ type = "userid", value = 1104772439 },
 		},
 	},
 

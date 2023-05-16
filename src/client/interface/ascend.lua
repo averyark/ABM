@@ -37,10 +37,10 @@ local updateAscensionFrame = function()
     local ui = Players.LocalPlayer.PlayerGui.ascend.mainframe
     local data = playerDataHandler.getPlayer().data
     local r = data.ascension
-    local coinMulti = ascension.getCoinMultiplier(r+1) -- ascension.getCoinMultiplier(r)
+    local coinMulti = ascension.getPowerMultiplier(r+1) -- ascension.getCoinMultiplier(r)
     local powerMulti = ascension.getPowerMultiplier(r+1) -- ascension.getPowerMultiplier(r)
 
-    local cost = ascension.getCost(r+1)
+    local cost = ascension.getCost(r)
 
     ui.lower.cost.label.Text = number.abbreviate(cost, 2)
     ui.lower.a2.coin.label.Text = `{coinMulti}x Coin`
@@ -65,7 +65,7 @@ return {
             local ui = Players.LocalPlayer.PlayerGui.ascend.mainframe
             local data = playerDataHandler.getPlayer().data
             local r = data.ascension
-            local cost = ascension.getCost(r+1)
+            local cost = ascension.getCost(r)
 
             ui.lower.progress.bar.label.req.label.Text = number.abbreviate(cost, 2)
             ui.lower.progress.bar.label.current.label.Text = number.abbreviate(data.coins, 2)

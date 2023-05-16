@@ -35,6 +35,7 @@ if RunService:IsClient() then
 	debugUi.Name = "__debug"
 	debugUi.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	debugUi.ResetOnSpawn = false
+	debugUi.Enabled = false
 
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.Name = "scroll"

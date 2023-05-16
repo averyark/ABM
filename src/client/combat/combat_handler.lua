@@ -70,12 +70,26 @@ local animations = {
 }
 
 local sounds = {
+	ice = {
+		resouces.sound_effects["SwingIce1"],
+		resouces.sound_effects["SwingIce2"],
+	},
+	burn = {
+		resouces.sound_effects["SwingFire 1"],
+		resouces.sound_effects["SwingFire 2"],
+	},
+	lightning = {
+		resouces.sound_effects["SwingLightning1"],
+		resouces.sound_effects["SwingLightning2"],
+	},
 	attack = {
 		resouces.sound_effects["sword 1"],
 		resouces.sound_effects["sword 2"],
 	},
 	hit = {
 		resouces.sound_effects["Sword Hit"],
+		resouces.sound_effects["Sword Hit2"],
+		resouces.sound_effects["Sword Hit3"],
 	},
 }
 
@@ -161,7 +175,16 @@ function clientWeaponTable:activate()
 	self.basicAttackDebounce:lock(attackSpeed)
 
 	task.delay(attackSpeed/2, function()
-		playSound("attack", self.weapon.Handle)
+		if self.weapon:GetAttribute("ability") == 5 then
+			playSound("lightning", self.weapon.Handle)
+		elseif self.weapon:GetAttribute("ability") == 2 then
+			playSound("ice", self.weapon.Handle)
+		elseif self.weapon:GetAttribute("ability") == 3 then
+			playSound("burn", self.weapon.Handle)
+		else
+			playSound("attack", self.weapon.Handle)
+		end
+		
 	end)
 
 	self.basicAttackIncrements += 1
@@ -236,7 +259,7 @@ function clientWeaponTable:start()
 		self.weapon2hitboxClass.RaycastParams = RaycastParams.new()
 		self.weapon2hitboxClass.RaycastParams.FilterType = Enum.RaycastFilterType.Whitelist
 		self.weapon2hitboxClass.RaycastParams.FilterDescendantsInstances = { workspace.gameFolders.entities }
-		self.weapon2hitboxClass.Visualizer = true
+		self.weapon2hitboxClass.Visualizer = false
 		self._maid:Add(self.weapon2hitboxClass)
 		self:updateAnim()
 	end), "Disconnect")
@@ -253,6 +276,19 @@ function clientWeaponTable:start()
 			end
 		end
 		--update()
+	end))
+
+	if not self.character.HumanoidRootPart:FindFirstChild("runningParticle") then
+		ReplicatedStorage.effects.run.runningParticle:Clone().Parent = self.character.HumanoidRootPart
+	end
+
+	self._maid:Add(self.humanoid.Running:Connect(function(speed)
+		
+		if speed >= ((self.humanoid:GetAttribute("defaultWalkSpeed") or 16) + 6.5) and self.humanoid:GetState() == Enum.HumanoidStateType.Running then
+			self.character.HumanoidRootPart.runningParticle.particle.Enabled = true
+		else
+			self.character.HumanoidRootPart.runningParticle.particle.Enabled = false
+		end
 	end))
 
 	update()

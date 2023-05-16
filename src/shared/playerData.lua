@@ -107,12 +107,19 @@ if RunService:IsServer() then
 		coins = 0,
 		shards = 0,
 		xp = 0,
-		level = 0,
+		level = 1,
 		rebirth = 0,
 		ascension = 1,
 		currentWorld = 1,
 		lastDailyGift = 0,
+		lastGroupChest = 0,
 		dailyGiftStreak = 0,
+		premiumKey = 0,
+		timeSpent = 0,
+
+		isNew = true,
+		tutorial = false,
+		isTester = false,
 
 		quest = {
 			name = nil,
@@ -133,6 +140,34 @@ if RunService:IsServer() then
 				[4] = 0,
 				[5] = 0,
 			},
+			[2] = {
+				[1] = 0,
+				[2] = 0,
+				[3] = 0,
+				[4] = 0,
+				[5] = 0,
+			},
+			[3] = {
+				[1] = 0,
+				[2] = 0,
+				[3] = 0,
+				[4] = 0,
+				[5] = 0,
+			},
+			[4] = {
+				[1] = 0,
+				[2] = 0,
+				[3] = 0,
+				[4] = 0,
+				[5] = 0,
+			},
+			[5] = {
+				[1] = 0,
+				[2] = 0,
+				[3] = 0,
+				[4] = 0,
+				[5] = 0,
+			},
 		},
 		inventory = {
 			weapon = {
@@ -146,8 +181,24 @@ if RunService:IsServer() then
 
 			}
 		},
+		badges = {},
 		gifts = {},
+		usedCodes = {},
+		bossDefeated = {},
+		chests = {
+			[1] = 0,
+			[2] = 0,
+			[3] = 0,
+			[4] = 0,
+			[5] = 0,
+		},
 		stats = {
+			questsCompleted = 0,
+			legendarySwordUnlocked = 0,
+			longestDailyStreak = 0,
+			hoursSpent = 0,
+			capsulesOpened = 0,
+			
 			obtainedItemIndex = {
 				weapon = {
 					27,
@@ -218,13 +269,15 @@ if RunService:IsServer() then
 		return isDatastoreActive
 	end)
 
-	bridges.datastoreRetrieve:OnInvoke(function(player)
+	bridges.datastoreRetrieve:Connect(function(player)
 		assert(isDatastoreActive, "[datastore] Datastore is not online")
-		return loadPlayerData(player, datastore)
+		local load = loadPlayerData(player, datastore)
+		print(load, player, "LOAD")
+		bridges.datastoreRetrieve:FireTo(player, load)
 	end)
 
 	Promise.try(function()
-		local _datastore = ProfileService.GetProfileStore("DEVELOPMENT_TEST_STORE_18_6", TEMPLATE)
+		local _datastore = ProfileService.GetProfileStore("LIVE_1", TEMPLATE)
 		local isValid = t.table(_datastore)
 
 		assert(isValid, "Datastore failed to load")
@@ -297,13 +350,25 @@ else
 		return
 	end
 
+	bridges.datastoreRetrieve:Fire()
+	bridges.datastoreRetrieve:Connect(function(load)
+		print("LOAD CLIENT", load)
+		initialize(load)
+	end)
+
+	repeat
+		task.wait()
+	until loaded
+	
+
+	--[[print(bridges.datastoreOnline:InvokeServerAsync(Players.LocalPlayer))
 	if bridges.datastoreOnline:InvokeServerAsync() then
 		initialize(bridges.datastoreRetrieve:InvokeServerAsync())
 	else
 		bridges.datastoreOnline:Connect(function()
 			initialize(bridges.datastoreRetrieve:InvokeServerAsync())
 		end)
-	end
+	end]]
 
 	return {
 		connect = function(self, path: { string }, f: (changes: { new: any, old: any }) -> ())

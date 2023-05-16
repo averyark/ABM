@@ -23,7 +23,9 @@ local module = require(Astrax.module)
 local objects = require(Astrax.objects)
 local debugger = require(Astrax.debugger)
 
-local playerDataHandler = require(ReplicatedStorage.shared.playerData)
+Promise.try(function()
+    local playerDataHandler = require(ReplicatedStorage.shared.playerData)    
+end)
 
 Astrax.debugSettings.debugCommandsHandlerFolder = script.Parent.debugCommandsHandler
 Astrax.start()

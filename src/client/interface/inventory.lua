@@ -24,7 +24,7 @@ local Astrax = require(ReplicatedStorage.Packages.Astrax)
 local module = require(Astrax.module)
 local objects = require(Astrax.objects)
 local debugger = require(Astrax.debugger)
-
+local abilities = require(ReplicatedStorage.shared.abilities)
 local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
@@ -32,9 +32,11 @@ local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 local weapons = require(ReplicatedStorage.shared.weapons)
 local rarities = require(ReplicatedStorage.shared.rarities)
 local itemLevel = require(ReplicatedStorage.shared.itemLevel)
-local statusEffects = require(ReplicatedStorage.shared.statusEffects)
 local heros = require(ReplicatedStorage.shared.heros)
+local notifications = require(script.Parent.notifications)
 local passHandler = require(script.Parent.Parent.passHandler)
+local main = require(script.Parent.main)
+
 
 local bridges = {
 	equipWeapon = BridgeNet.CreateBridge("equipWeapon"),
@@ -45,6 +47,17 @@ local bridges = {
 	trashHero = BridgeNet.CreateBridge("trashHero"),
 	equipSecondaryWeapon = BridgeNet.CreateBridge("equipSecondaryWeapon"),
 	unequipSecondaryWeapon = BridgeNet.CreateBridge("unequipSecondaryWeapon"),
+	bulkTrashItem = BridgeNet.CreateBridge("bulkTrashItem"),
+	resetInventory = BridgeNet.CreateBridge("resetInventory")
+}
+
+local isUpgradeMode = false
+local upgradingMeta
+local itemSacrificaing = {}
+local isTrashMode = false
+local trashing = {
+	heroes = {},
+	swords = {}
 }
 
 local inventoryGui
@@ -60,7 +73,50 @@ local findItemWithIndexId = function(tbl, id)
 	end
 end
 
+
 local showInput = function(pos, self)
+	if isTrashMode then
+		if self.itemType == "Sword" then
+			if table.find(trashing.swords, self.indexId) then
+				tween.instance(self.manifest.container.trash, {
+					BackgroundTransparency = 1
+				}, .15, "EntranceExpressive")
+				tween.instance(self.manifest.container.trashLabel, {
+					ImageColor3 = Color3.fromRGB(255, 255, 255)
+				}, .15, "EntranceExpressive")
+				table.remove(trashing.swords, table.find(trashing.swords, self.indexId))
+				return
+			end
+			table.insert(trashing.swords, self.indexId)
+		else
+			if table.find(trashing.heroes, self.indexId) then
+				tween.instance(self.manifest.container.trash, {
+					BackgroundTransparency = 1
+				}, .15, "EntranceExpressive")
+				tween.instance(self.manifest.container.trashLabel, {
+					ImageColor3 = Color3.fromRGB(255, 255, 255)
+				}, .15, "EntranceExpressive")
+				table.remove(trashing.heroes, table.find(trashing.heroes, self.indexId))
+				return
+			end
+			table.insert(trashing.heroes, self.indexId)
+		end
+		self.manifest.container.trash.Visible = true
+		self.manifest.container.trash.BackgroundTransparency = 1
+		tween.instance(self.manifest.container.trash, {
+			BackgroundTransparency = .4
+		}, .15, "EntranceExpressive")
+		tween.instance(self.manifest.container.trashLabel, {
+			ImageColor3 = Color3.fromRGB(255, 99, 99)
+		}, .15, "EntranceExpressive")
+		self.manifest.container.trashLabel.Visible = true
+		print(trashing)
+		return
+	end
+	if isUpgradeMode then
+		
+		return
+	end
 	local inputUi = inventoryGui.input
 
 	if inputShowing == self then
@@ -91,24 +147,24 @@ local showInput = function(pos, self)
 		end
 	
 		if itemData.level >= itemLevel.maxLevel then
-			inputUi.buttons.upgrade.Text = "MAX LEVEL"
-			inputUi.buttons.upgrade.TextColor3 = Color3.fromRGB(97, 91, 59)
+			inputUi.buttons.upgrade.info.label.Text = "MAX LEVEL"
+			inputUi.buttons.upgrade.info.label.TextColor3 = Color3.fromRGB(97, 91, 59)
 		else
 			local dupe = 0
 			for _, sdat in pairs(playerData.data.inventory.weapon) do
-				if sdat.id == itemData.id and sdat.level == itemData.level then
+				if sdat.id == itemData.id and sdat.level == 0 then
 					dupe += 1
 				end
 			end
 			local levelDat = itemLevel.getLevelInfo(itemData.level + 1)
-			inputUi.buttons.upgrade.Text = levelDat.displayTxt .. (" (%s/%s)"):format(dupe, levelDat.req)
-			inputUi.buttons.upgrade.TextColor3 = Color3.fromRGB(220, 206, 134)
+			inputUi.buttons.upgrade.info.label.Text = levelDat.displayTxt .. (" (%s/%s)"):format(dupe, levelDat.req)
+			inputUi.buttons.upgrade.info.label.TextColor3 = Color3.fromRGB(220, 206, 134)
 		end
 		inputUi.buttons.upgrade.Visible = true
 		if playerData.data.equipped.weapon2 and self.indexId == playerData.data.equipped.weapon2 then
 			inputUi.primary.Text = "[Secondary]"
 			inputUi.primary.Visible = true
-			inputUi.buttons.equip.Text = "Unequip"
+			inputUi.buttons.equip.info.label.Text = "Unequip"
 			inputUi.buttons.equip.Visible = true
 			inputUi.buttons.equip2.Visible = false
 		elseif self.indexId == playerData.data.equipped.weapon then
@@ -118,16 +174,17 @@ local showInput = function(pos, self)
 			inputUi.buttons.equip2.Visible = false
 		else
 			inputUi.primary.Visible = false
-			inputUi.buttons.equip.Text = "Equip Primary"
+			inputUi.buttons.equip.info.label.Text = "Equip Primary"
 			inputUi.buttons.equip2.Visible = true
 			inputUi.buttons.equip.Visible = true
 		end
 	else
 		if table.find(playerData.data.equipped.hero, self.indexId) then
-			inputUi.buttons.equip.Text = "Unequip"
+			inputUi.buttons.equip.info.label.Text = "Unequip"
 		else
-			inputUi.buttons.equip.Text = "Equip"
+			inputUi.buttons.equip.info.label.Text = "Equip"
 		end
+		inputUi.buttons.equip.Visible = true
 		inputUi.buttons.equip2.Visible = false
 		inputUi.primary.Visible = false
 		inputUi.buttons.upgrade.Visible = false
@@ -140,7 +197,7 @@ local showInput = function(pos, self)
 	inputUi.rarity.Text = self.rarityData.name
 	inputUi.rarity.TextColor3 = self.rarityData.primaryColor
 	inputUi.title.Text = self.data.name
-	inputUi.Position = pos - UDim2.fromOffset(inputUi.AbsoluteSize.X + 8, 0)
+	inputUi.Position = pos - UDim2.fromOffset(inputUi.AbsoluteSize.X/inventoryGui.scaler.Scale + 8, 0)
 	inputUi.Visible = true
 	inventoryGui.exitTrigger.Visible = true
 end
@@ -163,20 +220,42 @@ function itemClass:updateManifest()
 		local itemData = findItemWithIndexId(playerData.data.inventory.weapon, self.indexId)
 		local levelDat = itemLevel.getLevelInfo(itemData.level)
 		local power = self.data.power * itemLevel.getMultiFromLevel(itemData.level)
-		self.manifest.container.info.amount.Text = number.abbreviate(power, 2)
+		self.manifest.container.info.amount.Text = number.abbreviate(power, 2, true)
 		self.manifest.LayoutOrder = -self.rarityData.order -power
 	
 		local levelUi = self.manifest.container.level
 	
-		if itemData.level > 0 then
-			levelUi.icon.icon.Image = levelDat.iconId
-			levelUi.amount.Text = ((itemData.level-1)%5)+1
+		if itemData.ability then
+			local dat = abilities[itemData.ability.id]
+			
+			if levelUi:FindFirstChild("icon") then
+				levelUi.icon:Destroy()
+			end
+			local content = ReplicatedStorage.abilities[dat.id]:Clone()
+			content.Parent = levelUi
+			content.Size = UDim2.fromOffset(21, 21)
+			
+			levelUi.amount.Text = itemData.level
+			levelUi.amount.Visible = true
 			levelUi.Visible = true
 		else
 			levelUi.Visible = false
 		end
+
+		--[[if itemData.level > 0 then
+			levelUi.icon.icon.Image = levelDat.iconId
+			levelUi.amount.Text = ((itemData.level-1)%5)+1
+			if itemData.level % 5 == 1 then
+				levelUi.amount.Visible = false
+			else
+				levelUi.amount.Visible = true
+			end
+			levelUi.Visible = true
+		else
+			levelUi.Visible = false
+		end]]
 	else
-		self.manifest.container.info.amount.Text = `x{number.abbreviate(self.data.multiplier)}`
+		self.manifest.container.info.amount.Text = `x{number.abbreviate(self.data.multiplier, 2, true)}`
 	end
 end
 
@@ -201,15 +280,32 @@ function itemClass:unequip()
 end
 
 function itemClass:trash()
+	if isTrashMode then return end
+	local desc = inventoryGui.Parent.inventoryActionConfirmation.mainframe.lower.desc
+
+	desc.Text = `You're <font color="rgb(255, 100, 100)">deleting</font> 1 {self.itemType} from your inventory. This action is irrevertible.`
+	main.focus(inventoryGui.Parent.inventoryActionConfirmation)
+	
+	trashing = {
+		swords = {},
+		heroes = {}
+	}
+
 	if self.itemType == "Sword" then
+		table.insert(trashing.swords, self.indexId)
+	elseif self.itemType == "Hero" then
+		table.insert(trashing.heroes, self.indexId)
+	end
+
+	--[[if self.itemType == "Sword" then
 		bridges.trashWeapon:Fire(self.indexId)
 	elseif self.itemType == "Hero" then
 		bridges.trashHero:Fire(self.indexId)
-	end
+	end]]
 end
 
 function itemClass:interact()
-	showInput(UDim2.fromOffset(self.manifest.AbsolutePosition.X, self.manifest.AbsolutePosition.Y), self)
+	showInput(UDim2.fromOffset(self.manifest.AbsolutePosition.X/inventoryGui.scaler.Scale, self.manifest.AbsolutePosition.Y/inventoryGui.scaler.Scale), self)
 	if self.itemType == "Sword" then
 		tween.instance(self.manifest.container.content, {
 			Size = UDim2.fromScale(1.05, 1.05),
@@ -250,6 +346,10 @@ function itemClass:hoverIn()
 	local info = inventoryGui.info
 	local playerData = playerDataHandler.getPlayer()
 
+	if isTrashMode then
+		self.manifest.container.trashLabel.Visible = true
+	end
+
 	if self.itemType == "Sword" then
 		local itemData = findItemWithIndexId(playerData.data.inventory.weapon, self.indexId)
 		local levelDat = itemLevel.getLevelInfo(itemData.level)
@@ -278,15 +378,28 @@ function itemClass:hoverIn()
 			end
 		end
 
-		for _, special in pairs(self.data.special or {}) do
-			local dat = statusEffects[special.id]
-			local statusEffectFrame = ReplicatedStorage.resources.statusEffectFrameTemplate:Clone()
-			statusEffectFrame.Name = dat.name
-			statusEffectFrame.icon.icon.Image = dat.icon
-			statusEffectFrame.label.Text = ("<font weight=\"heavy\">[%s]</font> %s"):format(dat.name, dat.description)
-			statusEffectFrame.label.TextColor3 = dat.color
-			statusEffectFrame.LayoutOrder = dat.order
-			statusEffectFrame.Parent = info.lower
+		if itemData.ability then
+			local dat = abilities[itemData.ability.id]
+			local ui = ReplicatedStorage.resources.abilitySmallTemplate:Clone()
+			ui.label.Text = `[Lv. {itemData.level} {dat.name}] {dat.getTxt(dat.getValue(itemData.level))}`
+			ui.label.TextColor3 = dat.color
+
+			if ui.icon:FindFirstChild("icon") then
+				ui.icon.icon:Destroy()
+			end
+			local content = ReplicatedStorage.abilities[dat.id]:Clone()
+			content.Parent = ui.icon
+
+			content.Size = UDim2.fromOffset(21, 21)
+			content.ZIndex += 3
+			for _, desc in pairs(content:GetDescendants()) do
+				if desc:IsA("GuiObject") then
+					desc.ZIndex += 3
+				end
+			end
+
+			ui.Visible = true
+			ui.Parent = info.lower
 			info.footer.special.Visible = true
 		end
 
@@ -295,16 +408,22 @@ function itemClass:hoverIn()
 		else
 			info.footer.soulbound.Visible = false
 		end
+		if self.data.rarity == 6 then
+			info.footer.limited.Visible = true
+		else
+			info.footer.limited.Visible = false
+		end
 
 		info.lower.Coin.Visible = true
 		info.lower.Knockback.Visible = true
-		info.lower.Power.label.Text = "[<font weight=\"heavy\">Power</font>] "
+		info.lower.Power.label.Text = "[Power] "
 			.. number.abbreviate(self.data.power * itemLevel.getMultiFromLevel(itemData.level) or self.data.baseDamage, 2)
-		info.lower.Knockback.label.Text = "[<font weight=\"heavy\">Knockback</font>] "
-			.. number.abbreviate(self.data.knockback, 2)
-		info.lower.Coin.label.Text = "[<font weight=\"heavy\">Coin</font>] x" .. number.abbreviate(self.data.coin, 2)
+		info.lower.Knockback.label.Text = "[Knockback] "
+		.. number.abbreviate(self.data.knockback, 2)
+		info.lower.Coin.label.Text = "[Coin] "
+		.. number.abbreviate(self.data.power * itemLevel.getMultiFromLevel(itemData.level) or self.data.baseDamage, 2)
 
-		info.footer.Position = UDim2.fromOffset(0, math.max(info.lower.list.AbsoluteContentSize.Y + 4 + 33, 103))
+		info.Visible = true
 
 		info.rarity.ImageColor3 = self.rarityData.primaryColor
 		info.stroke.Color = self.rarityData.primaryColor
@@ -312,7 +431,12 @@ function itemClass:hoverIn()
 		info.upper.title.Text = self.data.name
 		info.footer.rarity.Text = self.rarityData.name .. " Rarity Weapon"
 		info.footer.rarity.TextColor3 = self.rarityData.primaryColor
-		info.Visible = true
+
+		task.wait()
+		info.footer.Position = UDim2.fromOffset(
+			0,
+			math.max((info.lower.list.AbsoluteContentSize.Y + 41)/inventoryGui.scaler.Scale, 103)
+		)
 
 		self:destroyAllTweens()
 		manifesting = self
@@ -346,10 +470,12 @@ function itemClass:hoverIn()
 			end
 		end
 
-		info.lower.Coin.Visible = false
+		info.lower.Coin.Visible = true
 		info.lower.Knockback.Visible = false
 		info.lower.Power.label.Text = "[<font weight=\"heavy\">Power</font>] "
-			.. `x{number.abbreviate(self.data.multiplier, 2)}`
+			.. `x{number.abbreviate(self.data.multiplier, 2, true)}`
+		info.lower.Coin.label.Text = "[<font weight=\"heavy\">Coin</font>] "
+			.. `x{number.abbreviate(self.data.multiplier, 2, true)}`
 
 		info.footer.Position = UDim2.fromOffset(0, math.max(info.lower.list.AbsoluteContentSize.Y + 4 + 33, 103))
 
@@ -391,6 +517,17 @@ function itemClass:hoverIn()
 end
 
 function itemClass:hoverOut()
+	if isTrashMode then
+		if self.itemType == "Sword" then
+			if not table.find(trashing.swords, self.indexId) then
+				self.manifest.container.trashLabel.Visible = false
+			end
+		else
+			if not table.find(trashing.heroes, self.indexId) then
+				self.manifest.container.trashLabel.Visible = false
+			end
+		end
+	end
 	if manifesting == self then
 		inventoryGui.info.Visible = false
 		manifesting = nil
@@ -482,16 +619,120 @@ end
 
 local new
 
+local buttonColorCache = {}
+local buttonValueIncrement = 0.4
+
+local selectedPage
+
+
+local update = function()
+	local data = playerDataHandler.getPlayer().data
+	local equipped = data.equipped
+	local pageName = selectedPage.page.Name
+
+	local n = #data.inventory.hero
+	local max = 15 +
+		(passHandler.ownPass("25HeroSlots") and 25 or 0) +
+		(passHandler.ownPass("VIP") and 25 or 0)
+	local isInfinite = passHandler.ownPass("InfiniteInventory")
+
+	local n2 = #data.inventory.weapon
+	local max2 = 20 +
+		(passHandler.ownPass("50SwordSlots") and 50 or 0) +
+		(passHandler.ownPass("VIP") and 25 or 0)
+
+	if isInfinite then
+		inventoryGui.Parent.hud.buttons.sword.notif.Text = n2
+		inventoryGui.Parent.hud.buttons.sword.notif.TextColor3 = Color3.fromRGB(235, 235, 235)
+	elseif n2 >= max2 then
+		inventoryGui.Parent.hud.buttons.sword.notif.Text = "FULL"
+		inventoryGui.Parent.hud.buttons.sword.notif.TextColor3 = Color3.fromRGB(235, 80, 80)
+	else
+		inventoryGui.Parent.hud.buttons.sword.notif.Text = `{n2}/{max2}`
+		inventoryGui.Parent.hud.buttons.sword.notif.TextColor3 = Color3.fromRGB(235, 235, 235)
+	end
+	if isInfinite then
+		inventoryGui.Parent.hud.buttons.hero.notif.Text = n
+		inventoryGui.Parent.hud.buttons.hero.notif.TextColor3 = Color3.fromRGB(235, 235, 235)
+	elseif n >= max then
+		inventoryGui.Parent.hud.buttons.hero.notif.Text = "FULL"
+		inventoryGui.Parent.hud.buttons.hero.notif.TextColor3 = Color3.fromRGB(235, 80, 80)
+	else
+		inventoryGui.Parent.hud.buttons.hero.notif.Text = `{n}/{max}`
+		inventoryGui.Parent.hud.buttons.hero.notif.TextColor3 = Color3.fromRGB(235, 235, 235)
+	end
+
+	if pageName == "Sword" then
+		if isInfinite then
+			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 50)
+		elseif n2 >= max2 then
+			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 50, 50)
+		else
+			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 255)
+		end
+
+		inventoryGui.mainframe.footer.capacity.Text = `Capacity {n}/{isInfinite and "∞" or max2}`
+		inventoryGui.mainframe.footer.equipped.Text = `Sword Equipped {1 + (equipped.weapon2 and 1 or 0)}/{1 + (passHandler.ownPass("DualWield") and 1 or 0)}`
+	elseif pageName == "Hero" then
+		if isInfinite then
+			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 50)
+		elseif n >= max then
+			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 50, 50)
+		else
+			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 255)
+		end
+
+		inventoryGui.mainframe.footer.capacity.Text = `Capacity {n}/{isInfinite and "∞" or max}`
+		inventoryGui.mainframe.footer.equipped.Text = `Hero Equipped {#equipped.hero}/{2 + (passHandler.ownPass("3HeroEquip") and 3 or 0) + (passHandler.ownPass("VIP") and 1 or 0)}`
+	end
+end
+
 function itemClass:upgrade()
-    local response = bridges.upgradeWeapon:InvokeServerAsync(self.indexId)
+
+	if isUpgradeMode then return end
+
+	local playerData = playerDataHandler.getPlayer()
+	local itemData = findItemWithIndexId(playerData.data.inventory.weapon, self.indexId)
+
+	local dupe = 0
+	for _, sdat in pairs(playerData.data.inventory.weapon) do
+		if sdat.id == itemData.id and sdat.level == 0 then
+			dupe += 1
+		end
+	end
+
+	if itemData.level+1 > itemLevel.maxLevel then
+		return notifications.new():error("Error: You cannot star this item; This item already has max stars")
+	end
+	local reqDupe = itemLevel.getRequiredDuplicateFromLevel(itemData.level+1)
+	if dupe < reqDupe then
+		return notifications.new():error(`Error: You need {number.toWord(reqDupe - dupe)} more duplicate{reqDupe - dupe > 1 and "s" or ""} of "{self.data.name}" to star this item`)
+	end
+
+	if not itemData.ability then
+		local ui = inventoryGui.Parent.upgradeConfirmation
+		ui.mainframe.lower.desc.Text = `You're sacrificing {number.toWord(reqDupe)} <font color="rgb(255, 186, 107)">"{self.data.name}"</font> to infuse this sword with a random ability. This action is irrevertible.`
+		
+		upgradingMeta = self
+
+		main.focus(ui)
+	else
+		local dat = abilities[itemData.ability.id]
+		local ui = inventoryGui.Parent.abilityUpgradeConfirmation
+		ui.mainframe.lower.desc.Text = `You're sacrificing {number.toWord(itemLevel.getRequiredDuplicateFromLevel(itemData.level))} <font color="rgb(255, 186, 107)">"{self.data.name}"</font> to upgrade <font color="rgb(255, 186, 107)">"{dat.name}"</font> from <font color="rgb(255, 186, 107)">Lv. {itemData.level}</font> to <font color="rgb(255, 186, 107)">Lv. {itemData.level+1}</font>. This action is irrevertible.`
+		
+		upgradingMeta = self
+
+		main.focus(ui)
+	end
+
+	--main.focus(inventoryGui.Parent.upgradeConfirmation)
+
+    --[[local response = bridges.upgradeWeapon:InvokeServerAsync(self.indexId)
 	if response then
-		for _, object in pairs(inventoryGui.mainframe.lower:GetChildren()) do
+		for _, object in pairs(inventoryGui.mainframe.lower.Sword:GetChildren()) do
 			if object:IsA("GuiObject") then
-				for _, b in pairs(object:GetChildren()) do
-					if b:IsA("GuiObject") then
-						b:Destroy()
-					end
-				end
+				object:Destroy()
 			end
 		end
 		local playerData = playerDataHandler.getPlayer().data
@@ -503,7 +744,6 @@ function itemClass:upgrade()
 				end
 			end
 			new("Sword", dat, itemdat):render()
-			
 		end
 		if playerData.equipped.weapon then
 			local equipped = inventoryGui.mainframe.lower.Sword:FindFirstChild(playerData.equipped.weapon)
@@ -513,7 +753,8 @@ function itemClass:upgrade()
 			local equipped2 = inventoryGui.mainframe.lower.Sword:FindFirstChild(playerData.equipped.weapon2)
 			equipped2.container.equipped.Visible = true
 		end
-	end
+		update()
+	end]]
 end
 
 local itemObject = objects.new(itemClass, {})
@@ -527,52 +768,6 @@ new = function(itemType, dat, data)
 
 		tweens = {},
 	})
-end
-
-local buttonColorCache = {}
-local buttonValueIncrement = 0.4
-
-local selectedPage
-
-local update = function()
-	local data = playerDataHandler.getPlayer().data
-	local equipped = data.equipped
-	local pageName = selectedPage.page.Name
-	if pageName == "Sword" then
-		local n = #data.inventory.weapon
-		local max = 20 +
-			(passHandler.ownPass("50SwordSlots") and 50 or 0) +
-			(passHandler.ownPass("VIP") and 25 or 0)
-		local isInfinite = passHandler.ownPass("InfiniteInventory")
-
-		if isInfinite then
-			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 50)
-		elseif n >= max then
-			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 50, 50)
-		else
-			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 255)
-		end
-
-		inventoryGui.mainframe.footer.capacity.Text = `Capacity {n}/{isInfinite and "∞" or max}`
-		inventoryGui.mainframe.footer.equipped.Text = `Sword Equipped {1 + (equipped.weapon2 and 1 or 0)}/{1 + (passHandler.ownPass("DualWield") and 1 or 0)}`
-	elseif pageName == "Hero" then
-		local n = #data.inventory.hero
-		local max = 15 +
-			(passHandler.ownPass("25HeroSlots") and 25 or 0) +
-			(passHandler.ownPass("VIP") and 25 or 0)
-		local isInfinite = passHandler.ownPass("InfiniteInventory")
-
-		if isInfinite then
-			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 50)
-		elseif n >= max then
-			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 50, 50)
-		else
-			inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 255)
-		end
-
-		inventoryGui.mainframe.footer.capacity.Text = `Capacity {n}/{isInfinite and "∞" or max}`
-		inventoryGui.mainframe.footer.equipped.Text = `Hero Equipped {#equipped.hero}/{2 + (passHandler.ownPass("3HeroEquip") and 3 or 0) + (passHandler.ownPass("VIP") and 1 or 0)}`
-	end
 end
 
 local selectPage = function(pageName)
@@ -616,12 +811,109 @@ local selectPage = function(pageName)
 	update()
 end
 
+local trashMode = function()
+	--rbxassetid://13340905566 checkmark
+	--rbxassetid://13340837940 trash
+	if isTrashMode then
+		local desc = inventoryGui.Parent.inventoryActionConfirmation.mainframe.lower.desc
+		local str = ""
+		if #trashing.swords > 0 then
+			str = `{#trashing.swords} Swords {#trashing.heroes > 0 and "and " or ""}`
+		end
+		if #trashing.heroes > 0 then
+			str = `{str}{#trashing.heroes} Heroes`
+		end
+		if str ~= "" then
+			desc.Text = `You're <font color="rgb(255, 100, 100)">deleting</font> {str}from your inventory. This action is irrevertible.`
+			main.focus(inventoryGui.Parent.inventoryActionConfirmation)
+		end
+		inventoryGui.mainframe.trash.info.label.Image = "rbxassetid://13340837940"
+		isTrashMode = false
+		for _, object in pairs(inventoryGui.mainframe.lower:GetDescendants()) do
+			if object:IsA("TextButton") then
+				object.container.trash.Visible = false
+				object.container.trashLabel.Visible = false
+				object.container.trashLabel.ImageColor3 = Color3.fromRGB(255, 255, 255)
+			end
+		end
+	else
+		inventoryGui.input.Visible = false
+		trashing = {
+			heroes = {},
+			swords = {}
+		}
+		isTrashMode = true
+		inventoryGui.mainframe.trash.info.label.Image = "rbxassetid://13340905566"
+		notifications.new():message("Select items you want to trash")
+	end
+end
+
 return {
 	selectPage = selectPage,
 	load = function()
 		inventoryGui = Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("inventory")
 		local hud = Players.LocalPlayer.PlayerGui:WaitForChild("hud")
 		local info = inventoryGui.info
+
+		hud.buttons.hero.Activated:Connect(function()
+			selectPage("Hero")
+		end)
+		hud.buttons.sword.Activated:Connect(function()
+			selectPage("Sword")
+		end)
+
+		local trashButton = inventoryGui.mainframe.trash
+		local upgradeConfirmation = inventoryGui.Parent:WaitForChild("upgradeConfirmation")
+		local actionConfirmation = inventoryGui.Parent:WaitForChild("inventoryActionConfirmation")
+		local abilityUpgradeConfirmation = inventoryGui.Parent:WaitForChild("abilityUpgradeConfirmation")
+		local trashConfirm = actionConfirmation.mainframe.lower.confirm
+		local upgradeConfirm = upgradeConfirmation.mainframe.lower.confirm
+		local upgradeConfirm2 = abilityUpgradeConfirmation.mainframe.lower.confirm
+
+		local abilityInfo = upgradeConfirmation.info
+
+		main.initUi(upgradeConfirmation)
+		main.initUi(actionConfirmation)
+		main.initUi(abilityUpgradeConfirmation)
+
+        main:button(trashConfirm).Activated:Connect(function()
+            if not trashing then return end
+            main.focus(inventoryGui)
+            bridges.bulkTrashItem:Fire(trashing)
+            trashing = nil
+        end)
+
+
+		main:button(upgradeConfirm2).Activated:Connect(function()
+            main.focus(inventoryGui)
+
+			if not upgradingMeta then
+				return
+			end
+			bridges.upgradeWeapon:Fire(upgradingMeta.indexId)
+			upgradingMeta = nil
+        end)
+		main:button(upgradeConfirm).Activated:Connect(function()
+            main.focus(inventoryGui)
+
+			if not upgradingMeta then
+				return
+			end
+			bridges.upgradeWeapon:Fire(upgradingMeta.indexId)
+			upgradingMeta = nil
+        end)
+		abilityUpgradeConfirmation.mainframe.close2.Activated:Connect(function()
+			main.focus(inventoryGui)
+		end)
+		upgradeConfirmation.mainframe.close2.Activated:Connect(function()
+			main.focus(inventoryGui)
+		end)
+        actionConfirmation.mainframe.close2.Activated:Connect(function()
+            main.focus(inventoryGui)
+			trashing = nil
+        end)
+
+		main:button(trashButton).Activated:Connect(trashMode)
 
 		for _, object in pairs(inventoryGui.mainframe.lower:GetChildren()) do
 			if object:IsA("GuiObject") then
@@ -681,7 +973,39 @@ return {
 		selectPage("Sword")
 
 		local loaded = {}
-		playerDataHandler:connect({"ascension"}, function(changes)
+		bridges.resetInventory:Connect(function(indexid)
+			for _, b in pairs(inventoryGui.mainframe.lower.Sword:GetChildren()) do
+				if b:IsA("GuiObject") then
+					b:Destroy()
+				end
+			end
+			
+			local playerData = playerDataHandler.getPlayer().data
+			for _, a in pairs(playerData.inventory.weapon) do
+				if a.index == indexid then
+					print(print("reset", a))
+				end
+			end
+
+			for _, dat in pairs(playerData.inventory.weapon) do
+				local itemdat
+				for name, data in pairs(weapons) do
+					if data.id == dat.id then
+						itemdat = data
+					end
+				end
+				new("Sword", dat, itemdat):render()
+			end
+			if playerData.equipped.weapon then
+				local equipped = inventoryGui.mainframe.lower.Sword:FindFirstChild(playerData.equipped.weapon)
+				equipped.container.equipped.Visible = true
+			end
+			if playerData.equipped.weapon2 then
+				local equipped2 = inventoryGui.mainframe.lower.Sword:FindFirstChild(playerData.equipped.weapon2)
+				equipped2.container.equipped.Visible = true
+			end
+		end)
+		--[[playerDataHandler:connect({"ascension"}, function(changes)
 			if changes.new and changes.old then
 				for _, object in pairs(inventoryGui.mainframe.lower:GetChildren()) do
 					if object:IsA("GuiObject") then
@@ -720,8 +1044,10 @@ return {
 					end
 					new("Hero", dat, itemdat):render()
 				end
+
+				update()
 			end
-		end)
+		end)]]
 		playerDataHandler:connect({ "inventory", "weapon" }, function(change)
 			local newlyObtained = playerDataHandler:findChanges(change, true)
 
@@ -743,35 +1069,7 @@ return {
                     end
                 end
             end
-
-			local n = #change.new
-			local max = 20 +
-				(passHandler.ownPass("50SwordSlots") and 50 or 0) +
-				(passHandler.ownPass("VIP") and 25 or 0)
-			local isInfinite = passHandler.ownPass("InfiniteInventory")
-
-			if selectedPage.page.Name == "Sword" then
-				if isInfinite then
-					inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 50)
-				elseif n >= max then
-					inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 50, 50)
-				else
-					inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 255)
-				end
-
-				inventoryGui.mainframe.footer.capacity.Text = `Capacity {n}/{isInfinite and "∞" or max}`
-			end
-
-			if isInfinite then
-				hud.buttons.sword.notif.Text = n
-				hud.buttons.sword.notif.TextColor3 = Color3.fromRGB(235, 235, 235)
-			elseif n >= max then
-				hud.buttons.sword.notif.Text = "FULL"
-				hud.buttons.sword.notif.TextColor3 = Color3.fromRGB(235, 80, 80)
-			else
-				hud.buttons.sword.notif.Text = `{n}/{max}`
-				hud.buttons.sword.notif.TextColor3 = Color3.fromRGB(235, 235, 235)
-			end
+			update()
 		end)
 
 		playerDataHandler:connect({ "inventory", "hero" }, function(change)
@@ -795,34 +1093,7 @@ return {
                 end
             end
 
-			local n = #change.new
-			local max = 15 +
-				(passHandler.ownPass("25HeroSlots") and 25 or 0) +
-				(passHandler.ownPass("VIP") and 25 or 0)
-			local isInfinite = passHandler.ownPass("InfiniteInventory")
-
-			if selectedPage.page.Name == "Hero" then
-				if isInfinite then
-					inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 50)
-				elseif n >= max then
-					inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 50, 50)
-				else
-					inventoryGui.mainframe.footer.capacity.TextColor3 = Color3.fromRGB(255, 255, 255)
-				end
-
-				inventoryGui.mainframe.footer.capacity.Text = `Capacity {n}/{isInfinite and "∞" or max}`
-			end
-
-			if isInfinite then
-				hud.buttons.hero.notif.Text = n
-				hud.buttons.hero.notif.TextColor3 = Color3.fromRGB(235, 235, 235)
-			elseif n >= max then
-				hud.buttons.hero.notif.Text = "FULL"
-				hud.buttons.hero.notif.TextColor3 = Color3.fromRGB(235, 80, 80)
-			else
-				hud.buttons.hero.notif.Text = `{n}/{max}`
-				hud.buttons.hero.notif.TextColor3 = Color3.fromRGB(235, 235, 235)
-			end
+			update()
 		end)
 
 		playerDataHandler:connect({ "equipped", "weapon" }, function(change)
@@ -899,13 +1170,19 @@ return {
 		UserInputService.InputChanged:Connect(function(input, gameProcessedEvent)
 			if input.UserInputType == Enum.UserInputType.MouseMovement then
 				local mouseLocation = input.Position
-				info.Position = UDim2.fromOffset(mouseLocation.X + 16, mouseLocation.Y)
+				if info.Visible then
+					info.Position = UDim2.fromOffset((mouseLocation.X/inventoryGui.scaler.Scale) + 16, mouseLocation.Y/inventoryGui.scaler.Scale)
+				end
+				
+				if abilityInfo.Visible then
+					abilityInfo.Position = UDim2.fromOffset((mouseLocation.X/upgradeConfirmation.scaler.Scale) + 16, mouseLocation.Y/upgradeConfirmation.scaler.Scale)
+				end
 			end
 		end)
 
-		inventoryGui.input.buttons.equip.Activated:Connect(function(inputObject, clickCount)
+		main:button(inventoryGui.input.buttons.equip, .03).Activated:Connect(function()
 			if inputShowing then
-				if inventoryGui.input.buttons.equip.Text == "Unequip" then
+				if inventoryGui.input.buttons.equip.info.label.Text == "Unequip" then
 					inputShowing:unequip()
 				else
 					inputShowing:equip("primary")
@@ -916,7 +1193,7 @@ return {
 			inputShowing = nil
 		end)
 
-		inventoryGui.input.buttons.equip2.Activated:Connect(function(inputObject, clickCount)
+		main:button(inventoryGui.input.buttons.equip2, .03).Activated:Connect(function()
 			if inputShowing then
 				inputShowing:equip("secondary")
 			end
@@ -925,7 +1202,7 @@ return {
 			inputShowing = nil
 		end)
 
-		inventoryGui.input.buttons.upgrade.Activated:Connect(function(inputObject, clickCount)
+		main:button(inventoryGui.input.buttons.upgrade, .03).Activated:Connect(function()
 			if inputShowing then
 				inputShowing:upgrade()
 			end
@@ -934,7 +1211,7 @@ return {
 			inputShowing = nil
 		end)
 
-		inventoryGui.input.buttons.trash.Activated:Connect(function(inputObject, clickCount)
+		main:button(inventoryGui.input.buttons.trash, .03).Activated:Connect(function()
 			if inputShowing then
 				inputShowing:trash()
 			end
@@ -942,6 +1219,68 @@ return {
 			inventoryGui.exitTrigger.Visible = false
 			inputShowing = nil
 		end)
+
+		local abilityHovering
+
+		for id, ability in pairs(abilities) do
+			local abilityTemplate = ReplicatedStorage.resources.abilityTemplate:Clone()
+			local rarityData = rarities[ability.rarity]
+			
+			abilityTemplate.Name = ability.name
+			abilityTemplate.LayoutOrder = ability.chance*10000
+			abilityTemplate.Parent = upgradeConfirmation.mainframe.lower.abilities
+			abilityTemplate.container.content:Destroy()
+
+			local content = ReplicatedStorage.abilities[id]:Clone()
+			content.Name = "content"
+			content.Parent = abilityTemplate.container
+			
+			abilityTemplate.container.rarity.ImageColor3 = rarityData.primaryColor
+			abilityTemplate.container.rarityLabel.TextColor3 = rarityData.primaryColor
+			abilityTemplate.container.rarityLabel.Text = rarityData.name
+			abilityTemplate.container.stroke.Color = rarityData.primaryColor
+			abilityTemplate.container.percentage.Text = `{math.round(ability.chance*10000)/100}%`
+
+			abilityTemplate.MouseEnter:Connect(function()
+				if abilityHovering and abilityHovering == abilityTemplate then
+					return
+				end
+
+				abilityHovering = abilityTemplate
+
+				if abilityInfo.content:FindFirstChild("icon") then
+					abilityInfo.content.icon:Destroy()
+				end
+
+				local contentHover = content:Clone()
+				contentHover.Name = "icon"
+				contentHover.Parent = abilityInfo.content
+				contentHover.ZIndex += 3
+				for _, desc in pairs(contentHover:GetDescendants()) do
+					if desc:IsA("GuiObject") then
+						desc.ZIndex += 3
+					end
+				end
+
+				abilityInfo.footer.rarity.Text = `{rarityData.name} Rarity Ability`
+				abilityInfo.label.Text = ability.description
+				abilityInfo.upper.title.Text = ability.name
+				abilityInfo.footer.rarity.TextColor3 = rarityData.primaryColor
+				abilityInfo.stroke.Color = rarityData.primaryColor
+				abilityInfo.rarity.ImageColor3 = rarityData.primaryColor
+
+				abilityInfo.Visible = true
+
+				abilityInfo.footer.Position = UDim2.fromOffset(0,
+				math.max(37 + abilityInfo.label.TextBounds.Y/upgradeConfirmation.scaler.Scale, 103))
+			end)
+			abilityTemplate.MouseLeave:Connect(function()
+				if abilityHovering == abilityTemplate then
+					abilityHovering = nil
+					abilityInfo.Visible = false
+				end
+			end)
+		end
 
 		passHandler.once("DualWield", update)
 		passHandler.once("3HeroEquip", update)
@@ -957,4 +1296,3 @@ return {
         end]]
 	end,
 }
-

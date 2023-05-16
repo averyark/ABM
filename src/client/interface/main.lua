@@ -32,7 +32,6 @@ local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 local levels = require(ReplicatedStorage.shared.levels)
-local inventory = require(script.Parent.inventory)
 local settings = require(script.Parent.Parent.interface.settings)
 
 local bridges = {
@@ -172,19 +171,24 @@ interface.focus = function(ui, showCurrency, showQuest)
 
 	-- reset
 	showingUi.mainframe.Visible = false
-	showingUi.scaler.Scale = 0.9
-	showingUi.mainframe.Position = UDim2.fromScale(0.5, 0.8)
+	showingUi.scaler.Scale = 0.9 * showingUi.scaler:GetAttribute("__SCALE")
+	local size = showingUi.mainframe.Size
+	--showingUi.mainframe.Size = UDim2.new(-.1, size.X.Offset, -.1, size.Y.Offset)
+	showingUi.mainframe.Position = UDim2.fromScale(0.52, 0.8)
 
 	if showingUi.Name == "shop" then
 		settings.playSound(uiSounds["shop ui sound"])
 	end
 
 	table.insert(tweens, tween.instance(showingUi.mainframe, {
-		Position = UDim2.fromScale(0.5, 0.5),
+		Position = UDim2.fromScale(0.52, 0.5),
 	}, 0.6))
 	table.insert(tweens, tween.instance(showingUi.scaler, {
-		Scale = 1,
+		Scale = 1 * showingUi.scaler:GetAttribute("__SCALE"),
 	}, 0.4))
+	--[[table.insert(tweens, tween.instance(showingUi.mainframe, {
+		Size = UDim2.fromOffset(size.X.Offset, size.Y.Offset)
+	}, 0.35))]]
 	showingUi.mainframe.Visible = true
 	table.insert(tweens, tween.instance(playerCamera, {
 		FieldOfView = 55,
@@ -208,6 +212,52 @@ interface.initUi = function(ui)
 	end
 end
 
+function interface:button(button: GuiButton, amount: number?)
+	amount = amount or 0.05
+	local innerOutline = button:FindFirstChild("innerOutline")
+	local scale = button:FindFirstChild("scale")
+
+	if not innerOutline or not scale then
+		return warn("not a standard button")
+	end
+
+	local defaultColor = innerOutline.stroke.Color
+	local dh, ds, dv = defaultColor:ToHSV()
+	local hoverColor = Color3.fromHSV(dh, ds, dv+0.3)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			tween.instance(scale, {
+				Scale = 1,
+			}, .15)
+		end
+	end)
+
+	button.MouseButton1Down:Connect(function()
+		tween.instance(scale, {
+			Scale = 1 - amount,
+		}, .15, "Back")
+	end)
+	button.MouseLeave:Connect(function()
+		tween.instance(scale, {
+			Scale = 1,
+		}, .15, "Back")
+		tween.instance(innerOutline.stroke, {
+			Color = defaultColor
+		}, .15, "Back")
+	end)
+	button.MouseEnter:Connect(function()
+		tween.instance(scale, {
+			Scale = 1 + amount,
+		}, .15, "Back")
+		tween.instance(innerOutline.stroke, {
+			Color = hoverColor
+		}, .15, "Back")
+	end)
+
+	return button
+end
+
 function interface:load()
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 
@@ -218,7 +268,9 @@ function interface:load()
 		"ascend",
 		"sword",
 		"hero",
-		"fastTravel"
+		"fastTravel",
+		"promocodes",
+		"changelog"
 	}
 
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -327,11 +379,6 @@ function interface:load()
 			end
 		end)
 		button.Activated:Connect(function()
-			if name == "sword" then
-				inventory.selectPage("Sword")
-			elseif name == "hero" then
-				inventory.selectPage("Hero")
-			end
 			interface.focus(ui, name == "shop" or name == "ascend")
 		end)
 
@@ -351,7 +398,113 @@ function interface:load()
 		end)
 	end
 
+	local initScrollingFrame = function(scroll: ScrollingFrame)
+		if scroll.AutomaticCanvasSize ~= Enum.AutomaticSize.Y then
+			return
+		end
+		local listLayout =  scroll:FindFirstChildOfClass("UIListLayout")
+		local gridLayout = scroll:FindFirstChildOfClass("UIGridLayout")
+		local screenGui = scroll:FindFirstAncestorOfClass("ScreenGui")
+		local scaler = screenGui and screenGui:FindFirstChild("scaler")
+		local padding = scroll:FindFirstChildOfClass("UIPadding")
+		local update = function(y, paddingY)
+			if scaler then
+				scroll.CanvasSize = UDim2.fromOffset(0, (y + paddingY)/scaler.Scale)
+			else
+				scroll.CanvasSize = UDim2.fromOffset(0, y + paddingY)
+			end
+		end
+		if listLayout then
+			scroll.AutomaticCanvasSize = Enum.AutomaticSize.None
+			listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				local n = 0
+				for _, object in pairs(scroll:GetChildren()) do
+					if object:IsA("GuiObject") and object.Visible then
+						n += 1
+					end
+				end
+				update(
+					listLayout.AbsoluteContentSize.Y,
+				padding and padding.PaddingTop.Offset + padding.PaddingBottom.Offset or 0
+				)
+			end)
+			local n = 0
+				for _, object in pairs(scroll:GetChildren()) do
+					if object:IsA("GuiObject") and object.Visible then
+						n += 1
+					end
+				end
+				update(
+					listLayout.AbsoluteContentSize.Y,
+				padding and padding.PaddingTop.Offset + padding.PaddingBottom.Offset or 0
+				)
+		elseif gridLayout then
+			scroll.AutomaticCanvasSize = Enum.AutomaticSize.None
+			gridLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				update(
+					gridLayout.AbsoluteContentSize.Y,
+					padding and padding.PaddingTop.Offset + padding.PaddingBottom.Offset or 0
+				)
+			end)
+			update(
+				gridLayout.AbsoluteContentSize.Y,
+				padding and padding.PaddingTop.Offset + padding.PaddingBottom.Offset or 0
+			)
+		end
+	end
+
+	local initTextLabel = function(textLabel: TextLabel)
+		if textLabel.AutomaticSize ~= Enum.AutomaticSize.Y then
+			return
+		end
+		local screenGui = textLabel:FindFirstAncestorOfClass("ScreenGui")
+		local scaler = screenGui and screenGui:FindFirstChild("scaler")
+		if not scaler or not screenGui then return end
+
+		--[[textLabel.AutomaticSize = Enum.AutomaticSize.None
+
+		textLabel:GetPropertyChangedSignal("TextBounds"):Connect(function()
+			textLabel.Size = UDim2.new(
+				textLabel.Size.X.Scale,
+				textLabel.Size.X.Offset,
+				0,
+				textLabel.TextBounds.Y/scaler.Scale
+			)
+		end)
+		textLabel.Size = UDim2.new(
+				textLabel.Size.X.Scale,
+				textLabel.Size.X.Offset,
+				0,
+				textLabel.TextBounds.Y/scaler.Scale
+			)]]
+	end
+
+	playerGui.DescendantAdded:Connect(function(descendant)
+		if descendant:IsA("ScrollingFrame") then
+			initScrollingFrame(descendant)
+		elseif descendant:IsA("TextLabel") then
+			initTextLabel(descendant)
+		end
+	end)
+	for _, descendant in pairs(playerGui:GetDescendants()) do
+		if descendant:IsA("ScrollingFrame") then
+			initScrollingFrame(descendant)
+		elseif descendant:IsA("TextLabel") then
+			initTextLabel(descendant)
+		end
+	end
+
 	for _, gui in pairs(playerGui:GetChildren()) do
+		--[[for _, scroll in pairs(gui:GetDescendants()) do
+			if scroll:IsA("ScrollingFrame") then
+				initScrollingFrame(scroll)
+			end
+		end
+		gui.DescendantAdded:Connect(function(scroll)
+			if scroll:IsA("ScrollingFrame") then
+				initScrollingFrame(scroll)
+			end
+		end)]]
 		if gui:GetAttribute("clickSFX") == true then
 			for _, button in pairs(gui:GetDescendants()) do
 				if button:IsA("GuiButton") then
@@ -366,6 +519,16 @@ function interface:load()
 		end
 	end
 	playerGui.ChildAdded:Connect(function(gui)
+		--[[for _, scroll in pairs(gui:GetDescendants()) do
+			if scroll:IsA("ScrollingFrame") then
+				initScrollingFrame(scroll)
+			end
+		end
+		gui.DescendantAdded:Connect(function(scroll)
+			if scroll:IsA("ScrollingFrame") then
+				initScrollingFrame(scroll)
+			end
+		end)]]
 		if gui:GetAttribute("clickSFX") == true then
 			for _, button in pairs(gui:GetDescendants()) do
 				if button:IsA("GuiButton") then
@@ -390,7 +553,14 @@ function interface:load()
 		settings.playSound(sound)
 	end)
 
-	settings.playSound(SoundService.music)
+	BridgeNet.CreateBridge("message"):Connect(function(message, color)
+		StarterGui:SetCore("ChatMakeSystemMessage", {
+			Text = message,
+			Color = color or Color3.fromRGB(255, 255, 255)
+		})
+	end)
+
+	--settings.playSound(SoundService.music)
 end
 
 return interface

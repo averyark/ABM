@@ -80,6 +80,7 @@ function notifClass:itemObtained(itemType: string, itemId: number, percentage: n
 	if self.type then
 		debugger.error("Notification type already set")
 	end
+	settings.playSound(SoundService.itemObtained)
 	self.type = "itemObtained"
 	local itemData = findItem(itemId, if itemType == "weapon" then weapons else nil)
 	local rarityData = rarities[itemData.rarity]
@@ -100,6 +101,12 @@ function notifClass:itemObtained(itemType: string, itemId: number, percentage: n
 	ui.percentage.stroke.Transparency = 1
 	ui.itemName.TextTransparency = 1
 	ui.itemName.stroke.Transparency = 1
+
+	if percentage == 1 then
+		ui.percentage.Visible = false
+	else
+		ui.percentage.Visible = true
+	end
 
 	ui.percentage.Text = `{math.round(percentage*100000)/1000}%`
 	ui.Position = UDim2.new(.5, 0, 1, 0)

@@ -30,6 +30,7 @@ local debounce = require(ReplicatedStorage.shared.debounce)
 local number = require(ReplicatedStorage.shared.number)
 local tween = require(ReplicatedStorage.shared.tween)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
+local badges = require(script.Parent.badges)
 
 local bridges = {
     hasPass = BridgeNet.CreateBridge("hasPass"),
@@ -48,25 +49,40 @@ local gamepasses = {
 	["DualWield"] = 165402526, -- Dual Wield
 	["InfiniteInventory"] = 165402887, -- Infinite Inventory
 	["Luck"] = 165403482, -- Luck
-	["PremiumSword"] = 165404341, -- Premium Sword
+	--["PremiumSword"] = 165404341, -- Premium Sword
+	["FastTrvel"] = 165404934, -- Fast Travel
+	["VIP"] = 165405435, -- VIP
+}
+
+local names = {
+    ["3HeroEquip"] = 165398550, -- 3 Hero Equip
+	["3HeroUnlock"] = 165399434, -- 3 Hero Unlock
+	["50SwordSlots"] = 165400164, -- +50 Sword Slots
+	["25HeroSlots"] = 165400602, -- +25 Hero Inventory
+	["2xAscension"] = 165401869, -- 2x Ascension
+	["2xCoin"] = 165402296, -- 2x Coin
+	["DualWield"] = 165402526, -- Dual Wield
+	["InfiniteInventory"] = 165402887, -- Infinite Inventory
+	["Luck"] = 165403482, -- Luck
+	--["PremiumSword"] = 165404341, -- Premium Sword
 	["FastTrvel"] = 165404934, -- Fast Travel
 	["VIP"] = 165405435, -- VIP
 }
 
 local TESTING = true
 local TEST = {
-	["3HeroEquip"] = true, -- 3 Hero Equip
-	["3HeroUnlock"] = true, -- 3 Hero Unlock
+	["3HeroEquip"] = false, -- 3 Hero Equip
+	["3HeroUnlock"] = false, -- 3 Hero Unlock
 	["50SwordSlots"] = false, -- +50 Sword Slots
 	["25HeroSlots"] = false, -- +25 Hero Inventory
-	["2xAscension"] = true, -- 2x Ascension
+	["2xAscension"] = false, -- 2x Ascension
 	["2xCoin"] = false, -- 2x Coin
-	["DualWield"] = true, -- Dual Wield
+	["DualWield"] = false, -- Dual Wield
 	["InfiniteInventory"] = false, -- Infinite Inventory
-	["Luck"] = true, -- Luck
+	["Luck"] = false, -- Luck
 	["PremiumSword"] = false, -- Premium Sword
 	["FastTrvel"] = true, -- Fast Travel
-	["VIP"] = true, -- VIP
+	["VIP"] = false, -- VIP
 }
 
 local cache = {}
@@ -79,8 +95,13 @@ local hasPass = function(player: Player, passName: string)
     local passId = gamepasses[passName]
     assert(passId, "unexpected passName")
 
-    if TESTING then
-        return TEST[passName] or false
+    if TESTING and player.Name == "averyark" then
+        if cacheOwnPass[player] and table.find(cacheOwnPass[player], passId) then
+            return true
+        elseif TEST[passName] then
+            return TEST[passName]
+        end
+        return false
     end
 
     if MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId) then
@@ -96,6 +117,19 @@ local hasPass = function(player: Player, passName: string)
     end
 
     return false
+end
+
+local badgeCheck = function(player: Player)
+    local deact = true
+    for passName, passId in pairs(gamepasses) do
+        if not hasPass(player, passName) then
+            deact = false
+            break
+        end
+    end
+    if deact then
+        badges.incrementProgress(player, "emptiedTheShop")
+    end
 end
 
 local once = function(passName: string, handler: (Player) -> ())
@@ -138,8 +172,10 @@ return {
                     end
                 end
                 if not n then return end
+                --BridgeNet.CreateBridge("message"):FireAll(`{player.Name} just purchased `)
                 passPurchased:Fire(player, n)
                 bridges.passPurchased:FireTo(player, n)
+                badgeCheck(player)
             end
         end)
 
@@ -164,6 +200,7 @@ return {
                     table.insert(tb, passName)
                 end
             end
+            badgeCheck(player)
             return tb
         end)
         bridges.hasPass:OnInvoke(hasPass)

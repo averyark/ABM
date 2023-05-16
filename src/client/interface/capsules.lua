@@ -6,6 +6,8 @@
     Created     > 05/04/2023
 --]]
 local CollectionService = game:GetService("CollectionService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local PolicyService = game:GetService("PolicyService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local Players = game:GetService("Players")
@@ -43,12 +45,26 @@ local displayCapsule = function(capsuleId)
     local ui = Players.LocalPlayer.PlayerGui.capsule
     local capsule = capsules[capsuleId]
 
-    ui.mainframe.coins.inner.label.Text = number.abbreviate(capsule.cost, 2)
-
     for _, object in pairs(ui.mainframe.lower:GetChildren()) do
         if object:IsA("TextButton") then
             object:Destroy()
         end
+    end
+
+    if capsule.premium then
+        ui.mainframe.buttons.Buy.Visible = true
+        ui.mainframe.buttons.Auto.Visible = false
+        ui.mainframe.coins.Visible = false
+        ui.mainframe.robux.Visible = true
+        ui.mainframe.keys.Visible = true
+        ui.mainframe.robux.inner.label.Text = number.commaFormat(capsule.cost)
+    else
+        ui.mainframe.buttons.Buy.Visible = false
+        ui.mainframe.buttons.Auto.Visible = true
+        ui.mainframe.coins.Visible = true
+        ui.mainframe.robux.Visible = false
+        ui.mainframe.keys.Visible = false
+        ui.mainframe.coins.inner.label.Text = number.abbreviate(capsule.cost, 2)
     end
 
     for heroId, percentage in pairs(capsule.rewards) do
@@ -114,8 +130,12 @@ return {
         BridgeNet.CreateBridge("capsuleOpened"):Connect(function(_, _, type)
             --openDebounce:lock()
             if type == "Auto" then
-                task.wait(5)
+                task.wait(6)
                 if auto then
+                    if not displayingCapsuleId then
+                        auto = false
+                        return
+                    end
                     if not BridgeNet.CreateBridge("openCapsule"):InvokeServerAsync(displayingCapsuleId, "Auto") then
                         auto = false
                     end
@@ -160,6 +180,10 @@ return {
 					buttonColorCache[button] = { defaultColor = defaultColor, hoveredColor = color }
 				end
 				button.Activated:Connect(function()
+                    if button.Name == "Buy" then
+                        MarketplaceService:PromptProductPurchase(Players.LocalPlayer, capsules[displayingCapsuleId].productId)
+                        return
+                    end
                     if openDebounce:isLocked() then
                         return
                     end
@@ -209,25 +233,51 @@ return {
 			end
 		end
 
+        local _capsules = {}
+
+        for _, capsulesFolder in pairs(workspace.gameFolders.capsules:GetChildren()) do
+            _capsules[tonumber(capsulesFolder.Name)] = {}
+            if capsulesFolder:IsA("Folder") then
+                for _, capsule in pairs(capsulesFolder:GetChildren()) do
+                    _capsules[tonumber(capsulesFolder.Name)][tonumber(capsule.Name)] = capsule
+                end
+            end
+        end
+
+        playerDataHandler:connect({"premiumKey"}, function(changes)
+            ui.mainframe.keys.inner.label.Text = changes.new
+        end)
+
+        local data = playerDataHandler.getPlayer().data
+        local policy = PolicyService:GetPolicyInfoForPlayerAsync(Players.LocalPlayer)
+
+        print(policy)
+
         RunService.Heartbeat:Connect(function(deltaTime)
             local character = Players.LocalPlayer.Character
             if not character then return end
 
+            local currentWorld = data.currentWorld
+
             local closestCapsule
             local charPos = character:GetPivot().Position
 
-            for _, model in pairs(CollectionService:GetTagged("Capsule")) do
-                local center = model:GetPivot().Position
+            for _, capsule in pairs(_capsules[tonumber(currentWorld)]) do
+                local center = capsule.centre.Position
                 local distanceFromCenter = (center - charPos).Magnitude
-                if distanceFromCenter < 10 then
+                if distanceFromCenter < 15 then
                     if closestCapsule then
-                        if distanceFromCenter < (closestCapsule:GetPivot().Position - charPos).Magnitude then
-                            closestCapsule = model
+                        if (closestCapsule.centre.Position - charPos).Magnitude < distanceFromCenter then
+                            closestCapsule = capsule
                         end
                     else
-                        closestCapsule = model
+                        closestCapsule = capsule
                     end
                 end
+            end
+
+            if policy.ArePaidRandomItemsRestricted then
+                return
             end
             
             if closestCapsule and not isShowing then
@@ -237,15 +287,28 @@ return {
                 displayCapsule(tonumber(closestCapsule.Name))
                 interface.focus(ui, true)
             elseif not closestCapsule and isShowing then
-                local center = displayingCapsule:GetPivot().Position
+                local center = displayingCapsule.centre.Position
                 local distanceFromCenter = (center - charPos).Magnitude
 
-                if distanceFromCenter > 15 then
+                if distanceFromCenter > 20 then
                     isShowing = false
                     displayingCapsuleId = nil
                     displayingCapsule = nil
                     interface.unfocus()
                 end
+            elseif closestCapsule and isShowing and closestCapsule ~= displayingCapsule then
+                local cacheId = tonumber(closestCapsule.Name)
+                displayingCapsuleId = cacheId
+                displayingCapsule = closestCapsule
+                
+                --interface.unfocus()
+                --[[task.delay(.4, function()
+                    isShowing = true]]
+                    displayCapsule(cacheId)
+                    --interface.focus(ui, true)
+                --end)
+                
+                
             end
         end)
     end

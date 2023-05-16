@@ -9,11 +9,11 @@ return {
 		zone = 1,
 		iconId = "rbxassetid://12182177435",
 
-		power = 2430,
+		power = 1745,
 		coin = 24300,
 		baseDamage = 100,
-		critChance = 0.3,
-		critMultiplication = { 2, 2.8 },
+		critChance = 0.2,
+		critMultiplication = { 1.2, 1.5 },
 		knockback = 24,
 		basicAttackCooldown = 0.05,
 	},
@@ -26,10 +26,11 @@ return {
 		zone = 2,
 		iconId = "rbxassetid://12182192788",
 
+		power = 10463,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 26,
 		basicAttackCooldown = 0.05,
 	},
 	["Bakufu"] = {
@@ -41,10 +42,11 @@ return {
 		zone = 5,
 		iconId = "rbxassetid://12192115685",
 
+		power = 975000000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 60,
 		basicAttackCooldown = 0.05,
 	},
 	["Blackcliff Longsword"] = {
@@ -57,7 +59,7 @@ return {
 
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
+		critMultiplication = { 1.2, 1.5 },
 		knockback = 15,
 		basicAttackCooldown = 0.05,
 	},
@@ -70,10 +72,11 @@ return {
 		zone = 4,
 		iconId = "rbxassetid://12192107100",
 
+		power = 1440000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 44,
 		basicAttackCooldown = 0.05,
 	},
 	["Cool Steel"] = {
@@ -85,10 +88,11 @@ return {
 		zone = 3,
 		iconId = "rbxassetid://12191718361",
 
+		power = 24800,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 23,
 		basicAttackCooldown = 0.05,
 	},
 	["Dark Iron Sword"] = {
@@ -100,11 +104,11 @@ return {
 		zone = 1,
 		iconId = "rbxassetid://12310931241",
 
-		power = 440,
+		power = 439,
 		coin = 8100,
 		baseDamage = 100,
 		critChance = 0.4,
-		critMultiplication = { 1.8, 2.6 },
+		critMultiplication = { 1.2, 1.5 },
 		knockback = 17,
 		basicAttackCooldown = 0.05,
 	},
@@ -117,11 +121,11 @@ return {
 		zone = 1,
 		iconId = "rbxassetid://12191690446",
 
-		power = 67,
+		power = 63,
 		coin = 90,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
+		critMultiplication = { 1.2, 1.5 },
 		knockback = 7,
 		basicAttackCooldown = 0.05,
 	},
@@ -134,10 +138,11 @@ return {
 		zone = 3,
 		iconId = "rbxassetid://12191718588",
 
+		power = 45000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 25,
 		basicAttackCooldown = 0.05,
 	},
 	["Filet Blade"] = {
@@ -149,10 +154,11 @@ return {
 		zone = 2,
 		iconId = "rbxassetid://12182177164",
 
+		power = 2081,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 16,
 		basicAttackCooldown = 0.05,
 	},
 	["Freedom Sworn"] = {
@@ -164,10 +170,11 @@ return {
 		zone = 4,
 		iconId = "rbxassetid://12192106910",
 
+		power = 8800000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 51,
 		basicAttackCooldown = 0.05,
 	},
 	["Harbinger Of Dawn"] = {
@@ -179,10 +186,11 @@ return {
 		zone = 2,
 		iconId = "rbxassetid://12182193155",
 
+		power = 1648,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 14,
 		basicAttackCooldown = 0.05,
 	},
 	["Iron Sting"] = {
@@ -194,10 +202,11 @@ return {
 		zone = 2,
 		iconId = "rbxassetid://12182192991",
 
+		power = 4052,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 21,
 		basicAttackCooldown = 0.05,
 	},
 	["Katana"] = {
@@ -209,10 +218,11 @@ return {
 		zone = 3,
 		iconId = "rbxassetid://12191718937",
 
+		power = 92000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 30,
 		basicAttackCooldown = 0.05,
 	},
 	["Lions Roar"] = {
@@ -224,10 +234,11 @@ return {
 		zone = 5,
 		iconId = "rbxassetid://12192114635",
 
+		power = 72500000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 48,
 		basicAttackCooldown = 0.05,
 	},
 	["Mistsplitter Reforged"] = {
@@ -239,10 +250,11 @@ return {
 		zone = 3,
 		iconId = "rbxassetid://12191719599",
 
+		power = 135400,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 35,
 		basicAttackCooldown = 0.05,
 	},
 	["Narukami"] = {
@@ -254,10 +266,11 @@ return {
 		zone = 3,
 		iconId = "rbxassetid://12191719232",
 
+		power = 230000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 42,
 		basicAttackCooldown = 0.05,
 	},
 	["Norse"] = {
@@ -269,11 +282,11 @@ return {
 		zone = 1,
 		iconId = "rbxassetid://12182177684",
 
-		power = 240,
+		power = 180,
 		coin = 900,
 		baseDamage = 100,
-		critChance = 0.3,
-		critMultiplication = { 1.5, 2.3 },
+		critChance = 0.2,
+		critMultiplication = { 1.2, 1.5 },
 		knockback = 12,
 		basicAttackCooldown = 0.05,
 	},
@@ -286,10 +299,11 @@ return {
 		zone = 5,
 		iconId = "rbxassetid://12192114864",
 
+		power = 245000000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 53,
 		basicAttackCooldown = 0.05,
 	},
 	["Royal Longsword"] = {
@@ -301,10 +315,11 @@ return {
 		zone = 4,
 		iconId = "rbxassetid://12192107865",
 
+		power = 300000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 34,
 		basicAttackCooldown = 0.05,
 	},
 	["Skyward Blade"] = {
@@ -316,10 +331,11 @@ return {
 		zone = 4,
 		iconId = "rbxassetid://12192107567",
 
+		power = 540000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 39,
 		basicAttackCooldown = 0.05,
 	},
 	["Summit Shaper"] = {
@@ -331,10 +347,11 @@ return {
 		zone = 2,
 		iconId = "rbxassetid://12182192661",
 
+		power = 27615,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 33,
 		basicAttackCooldown = 0.05,
 	},
 	["Sword Of Descension"] = {
@@ -346,10 +363,11 @@ return {
 		zone = 4,
 		iconId = "rbxassetid://12192107276",
 
+		power = 220000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 32,
 		basicAttackCooldown = 0.05,
 	},
 	["The Black Sword"] = {
@@ -361,10 +379,11 @@ return {
 		zone = 5,
 		iconId = "rbxassetid://12192115315",
 
+		power = 14300000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 43,
 		basicAttackCooldown = 0.05,
 	},
 	["Transcend"] = {
@@ -377,14 +396,11 @@ return {
 
 		soulbound = true,
 
-		special = {
-			{id = 1},
-		},
 		power = 120000,
 		coin = 50000,
 		baseDamage = 100,
-		critChance = 0.5,
-		critMultiplication = { 2, 4 },
+		critChance = 0.2,
+		critMultiplication ={ 1.2, 1.5 },
 		knockback = 80,
 		basicAttackCooldown = 0.05,
 	},
@@ -397,10 +413,11 @@ return {
 		zone = 5,
 		iconId = "rbxassetid://12192115109",
 
+		power = 8000000,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
-		knockback = 15,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 41,
 		basicAttackCooldown = 0.05,
 	},
 	["Wooden"] = {
@@ -412,12 +429,31 @@ return {
 		zone = 1,
 		iconId = "rbxassetid://12182177875",
 
-		power = 25,
+		power = 27,
 		coin = 10,
 		baseDamage = 100,
 		critChance = 0.2,
-		critMultiplication = { 1.4, 2.2 },
+		critMultiplication = { 1.2, 1.5 },
 		knockback = 5,
+		basicAttackCooldown = 0.05,
+	},
+	["Ark"] = {
+		name = "Ark",
+		id = 28,
+		model = ReplicatedStorage.items.weapons["Ark"],
+		class = "single_wield",
+		rarity = 3,
+		zone = 1,
+		iconId = "rbxassetid://13351200895",
+
+		soulbound = true,
+
+		power = 350,
+		coin = 10,
+		baseDamage = 100,
+		critChance = .2,
+		critMultiplication = { 1.2, 1.5 },
+		knockback = 13,
 		basicAttackCooldown = 0.05,
 	},
 }

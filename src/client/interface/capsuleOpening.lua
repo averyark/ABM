@@ -38,6 +38,8 @@ local capsules = require(ReplicatedStorage.shared.capsules)
 local heros = require(ReplicatedStorage.shared.heros)
 local rarities = require(ReplicatedStorage.shared.rarities)
 
+local renderer = require(script.Parent.Parent.renderer)
+
 local blur = Instance.new("BlurEffect")
 blur.Name = "__CAPSULE_BLUR"
 blur.Enabled = false
@@ -114,7 +116,7 @@ return {
                 local percentage = capsules[capsuleId].rewards[id]
 
                 clone.HumanoidRootPart.Anchored = true
-                clone:ScaleTo(1.4)
+                --clone:ScaleTo(1.4)
                 clone.Parent = workspace.gameFolders
                 clone.HumanoidRootPart.CFrame = CFrame.new(Vector3.new(69, -69, 69))
 
@@ -140,9 +142,13 @@ return {
                 BackgroundTransparency = 0
             }, .4, "EntranceExpressive").Completed:Wait()
 
+            renderer.loadLightingPreset("CapsuleOpening")
+
             local cf = workspace.CurrentCamera.CFrame
             workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
             workspace.CurrentCamera.CFrame = workspace.gameFolders.camPart1.CFrame
+
+            task.wait(.6)
 
             tween.instance(capsuleOpening.background, {
                 BackgroundTransparency = 1
@@ -248,6 +254,9 @@ return {
             workspace.CurrentCamera.FieldOfView = 50
             workspace.CurrentCamera.CFrame = cf
 
+            renderer.resetLighting()
+            task.wait(.3)
+
             tween.instance(capsuleOpening.background, {
                 BackgroundTransparency = 1
             }, .4, "ExitExpressive")
@@ -285,9 +294,9 @@ return {
             main.unlock()
         end
 
-        ReplicatedStorage.test3.Event:Connect(function(id, capsuleId)
+        --[[ReplicatedStorage.test3.Event:Connect(function(id, capsuleId)
             animatedCapsuleOpening(id, capsuleId)
-        end)
+        end)]]
 
         BridgeNet.CreateBridge("capsuleOpened"):Connect(animatedCapsuleOpening)
     end

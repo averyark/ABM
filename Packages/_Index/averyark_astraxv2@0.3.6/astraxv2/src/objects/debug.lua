@@ -170,11 +170,11 @@ objectDebugger.new = function(_table)
 		end
 	end)
 
-	if not _table._meta.__tostring then
+	--[[if not _table._meta.__tostring then
 		_table._meta.__tostring = function(self)
 			return ("<object:%s>(%s)"):format(ids.objectId, self._meta.id)
 		end
-	end
+	end]]
 
 	return _table
 end

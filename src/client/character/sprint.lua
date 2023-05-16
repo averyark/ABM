@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 local StarterPlayer = game:GetService("StarterPlayer")
 
 local BridgeNet = require(ReplicatedStorage.Packages.BridgeNet)
@@ -41,7 +42,9 @@ local sprintKeyDown = false
 local isSprinting = false
 local character: typeof(Players.LocalPlayer.Character)
 local isUiFocusing = false
+local lastRunClock = os.clock()
 sprint.speed = 16
+
 
 local tweenObject1, tweenObject2
 
@@ -77,7 +80,6 @@ local beginSprint = function()
 		}, 0.4, "Cubic")
 	end
 
-
 	movement.sprinting(true)
 end
 
@@ -111,6 +113,8 @@ local endSprint = function()
 			FieldOfView = 70,
 		}, 0.4, "Cubic")
 	end
+
+	lastRunClock = os.clock()
 
 	movement.sprinting(false)
 end
@@ -150,6 +154,8 @@ function sprint:load()
 		end
 	end)
 
+	local connection
+
 	player.CharacterAdded:Connect(function(char)
 		isSprinting = false
 		usingWeaponState = false
@@ -165,6 +171,41 @@ function sprint:load()
 					WalkSpeed = character.Humanoid:GetAttribute("defaultWalKSpeed"),
 				}, 0.25, "Cubic")
 			end
+		end)
+
+		local humanoid = character.Humanoid :: Humanoid
+		local isAutoRunning = false
+		local speed = 0
+
+		if connection then
+			connection:Disconnect()
+		end
+
+		connection = RunService.Heartbeat:Connect(function(deltaTime)
+			if not playerDataHandler.getPlayer().data.settings[3] then
+				if isAutoRunning then
+					isAutoRunning = false
+					endSprint()
+				end
+				return
+			end
+			if
+				speed <= 12 -- Check if the character is idle
+				or humanoid:GetState() ~= Enum.HumanoidStateType.Running -- Check if the character is in other states such as falling or jumping
+			then
+				isAutoRunning = false
+				lastRunClock = os.clock()
+				endSprint()
+			end
+
+			if os.clock() - lastRunClock > 2 and not isSprinting then
+				isAutoRunning = true
+				beginSprint()
+			end
+		end)
+		lastRunClock = os.clock()
+		humanoid.Running:Connect(function(_speed)
+			speed = _speed
 		end)
 	end)
 	if player.Character then
@@ -183,31 +224,54 @@ function sprint:load()
 				}, 0.25, "Cubic")
 			end
 		end)
+
+		local humanoid = character.Humanoid :: Humanoid
+		local isAutoRunning = false
+		local speed = 0
+
+		if connection then
+			connection:Disconnect()
+		end
+
+		connection = RunService.Heartbeat:Connect(function(deltaTime)
+			if not playerDataHandler.getPlayer().data.settings[3] then
+				if isAutoRunning then
+					isAutoRunning = false
+					endSprint()
+				end
+				return
+			end
+			if
+				speed <= 12 -- Check if the character is idle
+				or humanoid:GetState() ~= Enum.HumanoidStateType.Running -- Check if the character is in other states such as falling or jumping
+			then
+				isAutoRunning = false
+				lastRunClock = os.clock()
+				endSprint()
+			end
+
+			if os.clock() - lastRunClock > 2 and not isSprinting then
+				isAutoRunning = true
+				beginSprint()
+			end
+		end)
+		lastRunClock = os.clock()
+		humanoid.Running:Connect(function(_speed)
+			speed = _speed
+		end)
 	end
 	
 	ContextActionService:BindAction("sprint", function(_, inputState, inputObject: InputObject)
 		if inputObject.KeyCode == Enum.KeyCode.LeftShift then
 			if inputState == Enum.UserInputState.Begin then
-				if not playerDataHandler.getPlayer().data.settings[3] then
-					if sprintKeyDown then
-						sprintKeyDown = false
-						endSprint()
-					else
-						sprintKeyDown = true
-						beginSprint()
-					end
-				else
-					sprintKeyDown = true
-					beginSprint()
-				end
+				sprintKeyDown = true
+				beginSprint()
 			elseif inputState == Enum.UserInputState.End then
-				if playerDataHandler.getPlayer().data.settings[3] then
-					sprintKeyDown = false
-					endSprint()
-				end
+				sprintKeyDown = false
+				endSprint()
 			end
 		end
-	end, true, Enum.KeyCode.LeftShift)
+	end, false, Enum.KeyCode.LeftShift)
 	isSprinting = false
 	usingWeaponState = false
 end

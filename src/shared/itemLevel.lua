@@ -1,13 +1,13 @@
 local levels = {
 	{ -- Star 1
-		req = 5,
+		req = 3,
 		multi = 1.5,
 		txt = "1 Star",
         displayTxt = "Star",
 		iconId = "rbxassetid://12333589554",
 	},
 	{ -- Star 2
-		req = 5,
+		req = 3,
 		multi = 2.1,
 		txt = "2 Star",
         displayTxt = "Star",
@@ -21,20 +21,20 @@ local levels = {
 		iconId = "rbxassetid://12333589554",
 	},
 	{ -- Star 4
-		req = 5,
+		req = 7,
 		multi = 3.6,
 		txt = "4 Star",
         displayTxt = "Star",
 		iconId = "rbxassetid://12333589554",
 	},
 	{ -- Star 5
-		req = 5,
+		req = 7,
 		multi = 5,
 		txt = "5 Star",
         displayTxt = "Star",
 		iconId = "rbxassetid://12333589554",
 	},
-	-- Crown 1
+	--[[-- Crown 1
 	{
 		req = 10,
 		multi = 7,
@@ -72,7 +72,7 @@ local levels = {
 		txt = "5 Crown",
         displayTxt = "Crown",
 		iconId = "rbxassetid://12333587940",
-	},
+	},]]
 }
 
 local getMaxLevel = function()

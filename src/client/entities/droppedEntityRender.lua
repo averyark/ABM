@@ -236,7 +236,7 @@ function droppedEntityClass:collect()
 		if collectedBillboard[self.type] then
 			local billboard = collectedBillboard[self.type]
 			billboard:SetAttribute("rawValue", billboard:GetAttribute("rawValue") + amount)
-			billboard.orb.label.Text = number.abbreviate(billboard:GetAttribute("rawValue"))
+			billboard.orb.label.Text = number.abbreviate(billboard:GetAttribute("rawValue"), 2)
 			billboard.Position = reachPosition
 			lastCollectedBillboardUpdate[self.type] = os.clock()
 			billboard.orb.ExtentsOffset = Vector3.new(0, 0, 0)
@@ -256,7 +256,7 @@ function droppedEntityClass:collect()
 			end
 
 			billboard.orb.icon.Image = if data then data.iconId else icons[rType]
-			billboard.orb.label.Text = number.abbreviate(amount)
+			billboard.orb.label.Text = number.abbreviate(amount, 2)
 			billboard:SetAttribute("rawValue", amount)
 
 			billboard.Position = reachPosition

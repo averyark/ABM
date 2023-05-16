@@ -50,6 +50,12 @@ return {
 
         BridgeNet.CreateBridge("onAscend"):Connect(function(old, new)
             main.unfocus()
+            tween.instance(hud.right, {
+                Position = UDim2.new(1, 0, 0.5, 0),
+            }, 0.3, "ExitExpressive")
+            tween.instance(hud.smallButtons, {
+                Position = UDim2.new(0, -231, 0.5, -112),
+            }, 0.3, "ExitExpressive")
             tween.instance(hud.currencies, {
                 Position = UDim2.new(0, -250, 0.5, -40),
             }, 0.3, "ExitExpressive")
@@ -117,18 +123,24 @@ return {
                 Position = UDim2.fromScale(0.5, 1.5)
             }, .4, "ExitExpressive")
 
+            tween.instance(hud.right, {
+                Position = UDim2.new(1, -258, 0.5, 0),
+            }, 0.3, "EntranceExpressive")
             tween.instance(hud.currencies, {
                 Position = UDim2.new(0, 0, 0.5, -40),
             }, 0.3, "EntranceExpressive")
             tween.instance(hud.buttons, {
                 Position = UDim2.new(0, 8, 0.5, 66),
             }, 0.3, "EntranceExpressive")
+            tween.instance(hud.smallButtons, {
+                Position = UDim2.new(0, 8, 0.5, -112),
+            }, 0.3, "EntranceExpressive")
             tween.instance(hud.level, {
                 Position = UDim2.new(0.5, 0, 1, -48),
             }, 0.3, "EntranceExpressive")
             tween.instance(hud.rebirth, {
                 Position = UDim2.new(1, -28, 1, -32),
-            }, 0.3, "EntranceExpressive")
+        }, 0.3, "EntranceExpressive")
             task.wait(.4)
             activated = false
         end)

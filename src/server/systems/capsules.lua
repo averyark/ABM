@@ -33,6 +33,8 @@ local tween = require(ReplicatedStorage.shared.tween)
 local playerDataHandler = require(ReplicatedStorage.shared.playerData)
 local pass = require(script.Parent.pass)
 local capsules = require(ReplicatedStorage.shared.capsules)
+local productHandler = require(script.Parent.productHandler)
+local badge = require(script.Parent.badges)
 
 local bridges = {
     capsuleOpened = BridgeNet.CreateBridge("capsuleOpened"),
@@ -61,6 +63,14 @@ return {
             debounces[player] = nil
         end)
 
+        productHandler.productHandlers[1528675915] = function(player, receiptInfo, resolve, reject)
+            local playerData = playerDataHandler.getPlayer(player)
+            playerData:apply(function()
+                playerData.data.premiumKey += 1
+                resolve()
+            end)
+        end
+
         bridges.openCapsule:OnInvoke(function(player, id, type)
             if debounces[player] and os.clock() - debounces[player] < 4 then
                 return bridges.notifError:FireTo(player, "Error: Ratelimited; You're sending too much requests.")
@@ -73,9 +83,17 @@ return {
             local rewards = {}
 
             if type == "Open1" then
-                if playerData.data.coins < capsule.cost then
-                    bridges.notifError:FireTo(player, ("Error: Insufficient Coins. You need %s Coins"):format(number.abbreviate(capsule.cost - playerData.data.coins, 2)))
-                    return
+                if capsule.premium then
+                    if playerData.data.premiumKey < 1 then
+                        MarketplaceService:PromptProductPurchase(player, 1528675915)
+                        bridges.notifError:FireTo(player, ("Error: You need a Premium Key to unlock."))
+                        return
+                    end
+                else
+                    if playerData.data.coins < capsule.cost then
+                        bridges.notifError:FireTo(player, ("Error: Insufficient Coins. You need %s Coins"):format(number.abbreviate(capsule.cost - playerData.data.coins, 2)))
+                        return
+                    end
                 end
 
                 local hasInfinite = pass.hasPass(player, "InfiniteInventory")
@@ -95,6 +113,8 @@ return {
                     return
                 end
 
+                badge.incrementProgress(player, "capsulesOpened", 1)
+
                 bridges.playSound:FireTo(player, SoundService.purchase)
 
                 local reward = getChoiceFromChancePool(capsule.rewards)
@@ -102,7 +122,11 @@ return {
                 table.insert(rewards, reward)
 
                 playerData:apply(function()
-                    playerData.data.coins -= capsule.cost
+                    if capsule.premium then
+                        playerData.data.premiumKey -= 1
+                    else
+                        playerData.data.coins -= capsule.cost
+                    end
                     playerData.data.stats.itemsObtained.hero += 1
                     table.insert(playerData.data.inventory.hero, {
                         index = playerData.data.stats.itemsObtained.hero,
@@ -116,9 +140,17 @@ return {
                     pass.promptPassPurchase(player, "3HeroUnlock")
                     return
                 end
-                if playerData.data.coins < capsule.cost*3 then
-                    bridges.notifError:FireTo(player, ("Error: Insufficient Coins. You need %s Coins"):format(number.abbreviate(capsule.cost*3 - playerData.data.coins, 2)))
-                    return
+                if capsule.premium then
+                    if playerData.data.premiumKey < 3 then
+                        MarketplaceService:PromptProductPurchase(player, 1528675915)
+                        bridges.notifError:FireTo(player, ("Error: You need 3 Premium Key to unlock."))
+                        return
+                    end
+                else
+                    if playerData.data.coins < capsule.cost*3 then
+                        bridges.notifError:FireTo(player, ("Error: Insufficient Coins. You need %s Coins"):format(number.abbreviate(capsule.cost*3 - playerData.data.coins, 2)))
+                        return
+                    end
                 end
                 local hasInfinite = pass.hasPass(player, "InfiniteInventory")
                 local hasHeroSpace = pass.hasPass(player, "25HeroSlots")
@@ -137,6 +169,8 @@ return {
                     return
                 end
 
+                badge.incrementProgress(player, "capsulesOpened", 3)
+
                 bridges.playSound:FireTo(player, SoundService.purchase)
 
                 local selected1 = getChoiceFromChancePool(capsule.rewards)
@@ -148,7 +182,11 @@ return {
                 table.insert(rewards, selected3)
 
                 playerData:apply(function()
-                    playerData.data.coins -= capsule.cost*3
+                    if capsule.premium then
+                        playerData.data.premiumKey -= 3
+                    else
+                        playerData.data.coins -= capsule.cost*3
+                    end
                     playerData.data.stats.itemsObtained.hero += 1
                     table.insert(playerData.data.inventory.hero, {
                         index = playerData.data.stats.itemsObtained.hero,
@@ -169,6 +207,10 @@ return {
                     })
                 end)
             elseif type == "Auto" then
+                if capsule.premium then
+                    return bridges.notifError:FireTo(player, "An error occured")
+                end
+
                 if not player:IsInGroup(16352731) then
                     bridges.notifError:FireTo(player, "Error: Join the group to unlock Auto opening!")
                     return
@@ -194,6 +236,8 @@ return {
                     )
                     return
                 end
+
+                badge.incrementProgress(player, "capsulesOpened", 1)
 
                 bridges.playSound:FireTo(player, SoundService.purchase)
 

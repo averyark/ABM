@@ -137,7 +137,7 @@ local boostVelocity = function(character)
 end
 
 local updateJumpsManifest = function()
-	debugger.log("Remaining jumps:", jumps, "; Max jumps:", maxJumps)
+	--debugger.log("Remaining jumps:", jumps, "; Max jumps:", maxJumps)
 end
 
 local onJumpRequest = function(character, _, input)

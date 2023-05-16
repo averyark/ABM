@@ -25,6 +25,10 @@
           "$path": "src/client"
         }
       }
+    },
+    "Chat": {
+      "$className": "Chat",
+      "$path": "src/chat"
     }
   }
 }

@@ -178,10 +178,13 @@ function dataClass:Destroy()
 	self.profile:Release()
 end
 
-function dataClass:connect(path, f: (changes: { new: any, old: any }) -> ())
+function dataClass:connect(path, f: (changes: { new: any, old: any? }) -> ())
 	debugger.assert(t.table(path))
 	debugger.assert(t.callback(f))
 	self.connectedFunctions[path] = f
+	f({
+		new = fromPath(self.data, path)
+	})
 end
 
 local dataObject = objects.new(dataClass, {})

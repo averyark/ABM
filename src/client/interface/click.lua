@@ -41,11 +41,11 @@ return {
 
         UserInputService.InputBegan:Connect(function(inputObject, gameProcessed)
             if gameProcessed then return end
-            if inputObject.UserInputType == Enum.UserInputType.MouseButton1 then
+            if inputObject.UserInputType == Enum.UserInputType.MouseButton1 or inputObject.UserInputType == Enum.UserInputType.Touch then
                 if currentTween then
                     currentTween:Destroy()
                 end
-
+                clickFrame.Position = UDim2.fromOffset(inputObject.Position.X, inputObject.Position.Y)
                 bridges.clientClicked:Fire()
 
                 currentTween = tween.instance(clickFrame, {
@@ -56,7 +56,7 @@ return {
         end)
         
         UserInputService.InputEnded:Connect(function(inputObject)
-            if inputObject.UserInputType == Enum.UserInputType.MouseButton1 then
+            if inputObject.UserInputType == Enum.UserInputType.MouseButton1 or inputObject.UserInputType == Enum.UserInputType.Touch  then
                 if currentTween then
                     currentTween:Destroy()
                 end
@@ -68,7 +68,7 @@ return {
         end)
         
         UserInputService.InputChanged:Connect(function(inputObject, gameProcessed)
-            if inputObject.UserInputType == Enum.UserInputType.MouseMovement then
+            if inputObject.UserInputType == Enum.UserInputType.MouseMovement or inputObject.UserInputType == Enum.UserInputType.Touch then
                 clickFrame.Position = UDim2.fromOffset(inputObject.Position.X, inputObject.Position.Y)
             end
         end)

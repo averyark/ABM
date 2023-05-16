@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
+local ServerScriptService = game:GetService("ServerScriptService")
 local StarterPlayer = game:GetService("StarterPlayer")
 
 local BridgeNet = require(ReplicatedStorage.Packages.BridgeNet)
@@ -32,6 +33,8 @@ local roles = require(script.Parent.roles)
 local ranks = require(script.Parent.ranks)
 local upgrade = require(script.Parent.systems.upgrade)
 local pass = require(script.Parent.systems.pass)
+local badges = require(script.Parent.systems.badges)
+local leaderbord = require(script.Parent.systems.leaderboard)
 
 type nametagData = {
 	roles: { number },
@@ -41,6 +44,26 @@ type nametagData = {
 local auth = {
 	[540209459] = {
 		1, 2, 3
+	},
+	[62286926] = {
+		2, 3
+	},
+	[3675031237] = {
+		1, 2, 3
+	},
+	[1104772439] = {
+		1, 2, 3
+	},
+	[2326772094] = {
+		2,
+	}
+}
+
+local vipChat = {
+	chatColor = Color3.fromRGB(255, 218, 175),
+	chatTag = {
+		TagText = "VIP",
+		TagColor = Color3.fromRGB(255, 186, 107)
 	}
 }
 
@@ -160,6 +183,10 @@ local getRank = function(player: Player)
 			end
 		end
 	end
+
+	Promise.try(function()
+		leaderbord.updatePlayerPower(player, power)
+	end)
 	
 	local clone = current:Clone()
 	clone.Name = "rank"
@@ -167,7 +194,16 @@ local getRank = function(player: Player)
 end
 
 local initPlayer = function(player: Player)
-	local playerAuth = table.clone(auth[player.UserId]) or {}
+	local playerAuth = auth[player.UserId] and table.clone(auth[player.UserId]) or {}
+
+	if table.find(playerAuth, 2) then
+		for _, p in pairs(Players:GetPlayers()) do
+			badges.incrementProgress(p, "metADev")
+		end
+	end
+	if playerDataHandler.getPlayer(player).data.isTester then
+		table.insert(playerAuth, 5)
+	end
 
 	if pass.hasPass(player, "VIP") then
 		table.insert(playerAuth, 4)
@@ -179,19 +215,11 @@ local initPlayer = function(player: Player)
 	})
 end
 
-local newOnCharacter = function(player)
-	player.CharacterAdded:Connect(function(character)
-		initPlayer(player)
-	end)
-	if player.Character then
-		initPlayer(player)
-	end
-end
 
 return {
 	new = new,
 	preload = function(self)
-		Players.PlayerAdded:Connect(newOnCharacter)
+		local devInServers = 0
 
 		BridgeNet.CreateBridge("updateRank"):Connect(function(player: Player)
 			local head = player.Character:FindFirstChild("Head")
@@ -203,9 +231,134 @@ return {
 				getRank(player).Parent = head.nametag
 			end
 		end)
+		
+		local ChatService = require(ServerScriptService:WaitForChild("ChatServiceRunner"):WaitForChild("ChatService"))
+		
+		local speakerAdded = function(playerName)
+			local speaker = ChatService:GetSpeaker(playerName)
+			local player = Players:FindFirstChild(playerName)
+			local playerAuth = auth[player.UserId] or {}
+		
+			local chatRole
 
+			if playerDataHandler.getPlayer().data.isTester then
+				table.insert(playerAuth, 5)
+			end
+
+			for _, n in pairs(playerAuth) do
+				if roles[n] and roles[n].chat then
+					chatRole = roles[n].chat
+					break
+				end
+			end
+
+			if player and chatRole then
+				speaker:SetExtraData("Tags", {chatRole.chatTag, {
+					TagText = `Lv. {playerDataHandler.getPlayer(player).data.level}`,
+					TagColor = Color3.fromRGB(237, 255, 38)
+				}})
+				speaker:SetExtraData("ChatColor", chatRole.chatColor)
+			elseif pass.hasPass(player, "VIP") then
+				speaker:SetExtraData("Tags", {vipChat.chatTag, {
+					TagText = `Lv. {playerDataHandler.getPlayer(player).data.level}`,
+					TagColor = Color3.fromRGB(237, 255, 38)
+				}})
+				speaker:SetExtraData("ChatColor", vipChat.chatColor)
+			else
+				speaker:SetExtraData("Tags", {{
+					TagText = `Lv. {playerDataHandler.getPlayer(player).data.level}`,
+					TagColor = Color3.fromRGB(237, 255, 38)
+				}})
+				speaker:SetExtraData("ChatColor", nil)
+			end
+		end
+
+		local newOnCharacter = function(player: Player)
+			local playerAuth = auth[player.UserId] or {}
+		
+			local leaderstats = Instance.new("Folder")
+			leaderstats.Name = "leaderstats"
+			leaderstats.Parent = player
+			
+			local level = Instance.new("StringValue")
+			level.Name = "Level"
+			level.Value = "Lv.-"
+			level.Parent = leaderstats
+		
+			local world = Instance.new("StringValue")
+			world.Name = "World"
+			world.Value = "World -"
+			world.Parent = leaderstats
+		
+			
+			local playerData = playerDataHandler.getPlayer(player)
+		
+			playerData:connect({"currentWorld"}, function(changes)
+				world.Value = `World {changes.new}`
+			end)
+			playerData:connect({"level"}, function(changes)
+				level.Value = `Lv. ` .. changes.new
+				speakerAdded(player.Name)
+			end)
+			playerData:connect({"isTester"}, function(changes)
+				initPlayer(player)
+				speakerAdded(player.Name)
+			end)
+		
+			task.spawn(function()
+				while player:IsDescendantOf(Players) do
+					task.wait(10)
+					playerData:apply(function()
+						playerData.data.timeSpent += 10
+						badges.incrementProgress(player, "hoursSpent", playerData.data.timeSpent/3600)
+					end)
+				end
+			end)
+		
+			task.delay(2, function()
+				if table.find(playerAuth, 2) then
+					devInServers += 1
+					for _, p in pairs(Players:GetPlayers()) do
+						badges.incrementProgress(p, "metADev")
+					end
+					BridgeNet.CreateBridge("message"):FireAll(`A Developer, {player.Name} has joined the game!`, Color3.fromRGB(175, 228, 255))
+				elseif pass.hasPass(player, "VIP") then
+					BridgeNet.CreateBridge("message"):FireAll(`A VIP, {player.Name} has joined the game`,Color3.fromRGB(255, 218, 175))
+				else
+					BridgeNet.CreateBridge("message"):FireAll(`{player.Name} joined the game`,Color3.fromRGB(120, 255, 120))
+				end
+				if devInServers >= 1 then
+					badges.incrementProgress(player, "metADev")
+				end
+			end)
+		
+			player.CharacterAdded:Connect(function(character)
+				initPlayer(player)
+			end)
+			if player.Character then
+				initPlayer(player)
+			end
+		end
+		
+		Players.PlayerAdded:Connect(newOnCharacter)
+		Players.PlayerRemoving:Connect(function(player)
+			local playerAuth = auth[player.UserId] or {}
+
+			if table.find(playerAuth, 2) then
+				devInServers -= 1
+			end
+		end)
 		for _, player in pairs(Players:GetPlayers()) do
 			Promise.try(newOnCharacter, player)
 		end
+
+
+		pass.passPurchased:Connect(function(player: Player, passPurchased: string)
+			if passPurchased == "VIP" then
+				speakerAdded(player.Name)
+				initPlayer(player)
+			end
+		end)
+		ChatService.SpeakerAdded:Connect(speakerAdded)
 	end,
 }

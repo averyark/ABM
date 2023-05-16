@@ -33,26 +33,30 @@ local entity = require(script.Parent.entity)
 
 local spawnZones = {}
 
+
+
 function spawnZones:load()
 	local spawnEntityFolders = workspace.gameFolders.entitySpawnParts:GetChildren()
 
-	for _, folder in pairs(spawnEntityFolders) do
-		if folder:IsA("Folder") and entities[folder.Name] then
-			local spawnParts = folder:GetChildren()
-			local entityData = entities[folder.Name]
+	for _, worldFolder in pairs(spawnEntityFolders) do
+		for _, enemySpawn in pairs(worldFolder:GetChildren()) do
+			if entities[enemySpawn.Name] then
+				local entityData = entities[enemySpawn.Name]
+	
+				enemySpawn.Transparency = 1
+				enemySpawn.Decal.Transparency = 1
 
-			local spawn
-			spawn = function(spawnPart)
-				local monster = entity.new(entityData.id, spawnPart.CFrame)
-
-				monster.onDeath:Connect(function()
-					task.wait(entityData.respawnTime)
-					spawn(spawnPart)
-				end)
-			end
-
-			for _, spawnPart in pairs(spawnParts) do
-				spawn(spawnPart)
+				local spawn
+				spawn = function(spawnPart)
+					local monster = entity.new(entityData.id, spawnPart.CFrame)
+	
+					monster.onDeath:Connect(function()
+						task.wait(entityData.respawnTime)
+						spawn(spawnPart)
+					end)
+				end
+	
+				spawn(enemySpawn)
 			end
 		end
 	end

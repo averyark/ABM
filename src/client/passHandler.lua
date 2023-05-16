@@ -98,7 +98,7 @@ return {
             end
             for handler, _passName in pairs(handlers) do
                 if _passName == passName then
-                    task.spawn(handler)
+                    Promise.try(handler)
                 end
             end
         end)

@@ -33,6 +33,7 @@ local ascension = require(ReplicatedStorage.shared.ascension)
 local weapons = require(ReplicatedStorage.shared.weapons)
 local combat = require(script.Parent.Parent.combat.combat_handler)
 local pass = require(script.Parent.Parent.systems.pass)
+local worlds = require(ReplicatedStorage.shared.zones)
 
 local bridges = {
     ascend = BridgeNet.CreateBridge("ascend"),
@@ -62,7 +63,13 @@ return {
             local playerData = playerDataHandler.getPlayer(player)
             if not playerData then return end
 
-            local ascensionCost = ascension.getCost(playerData.data.ascension + 1)
+            local ascensionCost = ascension.getCost(playerData.data.ascension)
+
+            local has2x = pass.hasPass(player, "2xAscension")
+
+            if has2x then
+                ascensionCost /= 2
+            end
 
             if playerData.data.coins < ascensionCost then
                 BridgeNet.CreateBridge("notifError"):FireTo(player, ("Error: Insufficient Coins. You need %s Coins"):format(number.abbreviate(ascensionCost - playerData.data.coins, 2)))
@@ -70,45 +77,51 @@ return {
             end
 
             playerData:apply(function()
-                local defaultWeapon = weapons["Wooden"]
+                local highestWorldIndex = 1
+                for _, index in pairs(playerData.data.unlockedWorlds) do
+                    if index > highestWorldIndex then
+                        highestWorldIndex = index
+                    end
+                end
+                local defaultWeapon = worlds[highestWorldIndex].defaultWeapon
                 local cache = playerData.data.ascension
 
-                playerData.data.ascension += pass.hasPass(player, "2xAscension") and 2 or 1
-                playerData.data.level = 0
-                playerData.data.xp = 0
+                playerData.data.ascension += 1
+                --playerData.data.level = 0
+                --playerData.data.xp = 0
                 playerData.data.coins = 0
-                playerData.data.quest.name = 0
-                playerData.data.quest.progress = 0
+                --playerData.data.quest.name = nil
+                --playerData.data.quest.progress = 0
 
-                local soulboundSwords = {}
-                local soulboundHeros = {}
+                --[[local soulboundSwords = {}
+                --local soulboundHeros = {}
 
                 for i, dat in pairs(playerData.data.inventory.weapon) do
                     local item = find(dat.id)
                     if item.soulbound then
                         table.insert(soulboundSwords, table.clone(dat))
                     end
-                end
-                for i, dat in pairs(playerData.data.inventory.hero) do
+                end]]
+                --[[for i, dat in pairs(playerData.data.inventory.hero) do
                     local item = find(dat.id)
                     if item.soulbound then
                         table.insert(soulboundHeros, table.clone(dat))
                     end
-                end
+                end]]
 
-                playerData.data.stats.itemsObtained.weapon += 1
+                --playerData.data.stats.itemsObtained.weapon += 1
 
                 local index = playerData.data.stats.itemsObtained.weapon
 
-                table.insert(soulboundSwords, {
+                --[[table.insert(soulboundSwords, {
                     index = index,
                     id = defaultWeapon.id,
                     level = 0,
-                })
+                })]]
 
                 --table.clear(playerData.data.equipped.hero)
                 
-                if not findItemWithIndexId(soulboundSwords, playerData.data.equipped.weapon) then
+                --[[if not findItemWithIndexId(soulboundSwords, playerData.data.equipped.weapon) then
                     playerData.data.equipped.weapon = index
                     combat.loadPlayerWeapon(player, defaultWeapon.id)
                 end
@@ -117,7 +130,7 @@ return {
                     if player.Character:FindFirstChild("secondary") then
                         player.Character.secondary:Destroy()
                     end
-                end
+                end]]
 
                 for world, upgrades in pairs(playerData.data.upgrades) do
                     for upgrade in pairs(upgrades) do
@@ -125,17 +138,17 @@ return {
                     end
                 end
 
-                table.clear(playerData.data.equipped.hero)
-                table.clear(playerData.data.inventory.weapon)
-                table.clear(playerData.data.inventory.hero)
-                for i, v in pairs(soulboundSwords) do
+                --table.clear(playerData.data.equipped.hero)
+                --table.clear(playerData.data.inventory.weapon)
+                --table.clear(playerData.data.inventory.hero)
+                --[[for i, v in pairs(soulboundSwords) do
                     playerData.data.inventory.weapon[i] = v
-                end
-                for i, v in pairs(soulboundHeros) do
+                end]]
+                --[[for i, v in pairs(soulboundHeros) do
                     playerData.data.inventory.hero[i] = v
-                end
+                end]]
 
-                for _, hero in pairs(workspace.gameFolders.heros:GetChildren()) do
+                --[[for _, hero in pairs(workspace.gameFolders.heros:GetChildren()) do
                     local userId, heroIndexId = hero.Name:match("(%d+)-(%d+)")
             
                     if not userId or not heroIndexId then
@@ -152,7 +165,10 @@ return {
                     if not table.find(playerData.data.equipped.hero, heroIndexId) then
                         hero:Destroy()
                     end
-                end
+                end]]
+
+                BridgeNet.CreateBridge("notifMessage"):FireTo(player, "You lost all your coins and upgrades but you felt more powerful than before.")
+                return
 
                 bridges.onAscend:FireTo(player, cache, playerData.data.ascension)
             end)

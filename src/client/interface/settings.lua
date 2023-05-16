@@ -72,7 +72,7 @@ return {
                     end
                     if id == 2 then
                         if cacheLocal[id] then
-                            SoundService.music.Volume = 0.5
+                            SoundService.music.Volume = 0.25
                         else
                             SoundService.music.Volume = 0
                         end

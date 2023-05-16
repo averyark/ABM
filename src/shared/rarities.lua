@@ -29,4 +29,16 @@ return {
 		order = 5,
 		primaryColor = Color3.fromRGB(255, 105, 5),
 	},
+	{
+		name = "Premium",
+		id = 5,
+		order = 5,
+		primaryColor = Color3.fromRGB(255, 105, 5),
+	},
+	{
+		name = "Collectible",
+		id = 6,
+		order = 6,
+		primaryColor = Color3.fromRGB(68, 58, 255),
+	},
 }

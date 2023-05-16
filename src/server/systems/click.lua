@@ -33,6 +33,9 @@ local weapons = require(ReplicatedStorage.shared.weapons)
 local upgrade = require(script.Parent.upgrade)
 local ascension = require(ReplicatedStorage.shared.ascension)
 local pass = require(script.Parent.pass)
+local heros = require(ReplicatedStorage.shared.heros)
+local levels = require(ReplicatedStorage.shared.levels)
+local itemLevel = require(ReplicatedStorage.shared.itemLevel)
 
 local bridges = {
     clientClicked = BridgeNet.CreateBridge("clientClicked")
@@ -42,12 +45,44 @@ local threashold = {}
 
 local threasholdCheck = function(player)
     local list = threashold[player]
+
+	if not list then
+		threashold[player] = {}
+		return true
+	end
    
     if #list >= 7 then
         return false
     end
     return true
 end
+
+local find = function<t>(id: t & number): typeof(weapons[t])
+	for _, data in pairs(weapons) do
+		if data.id == id then
+			return data
+		end
+	end
+	return nil
+end
+local findHero = function<t>(id: t & number): typeof(heros[t])
+	for _, dat in pairs(heros) do
+		if dat.id == id then
+			return dat
+		end
+	end
+	return nil
+end
+
+local findItemWithIndexId = function(tbl, id)
+	for _, dat in pairs(tbl) do
+		if dat.index == id then
+			return dat
+		end
+	end
+end
+
+local random = Random.new()
 
 return {
     load = function()
@@ -61,29 +96,49 @@ return {
             if not threasholdCheck(player) then return end
             table.insert(threashold[player], os.clock())
 
-            local p = playerDataHandler.getPlayer(player)
+            local playerData = playerDataHandler.getPlayer(player)
             local id
 
-            for _, dat in pairs(p.data.inventory.weapon) do
-                if dat.index == p.data.equipped.weapon then
-                    id = dat.id
-                end
-            end
+            local power
+            local equippedWeaponData = findItemWithIndexId(
+					playerData.data.inventory.weapon,
+					playerData.data.equipped.weapon
+				)
+				local equippedWeaponData2
+				if playerData.data.equipped.weapon2 then
+					equippedWeaponData2 = findItemWithIndexId(
+						playerData.data.inventory.weapon,
+						playerData.data.equipped.weapon2
+					)
+				end
+				
+				local getTotalMulti = function()
+					local m = 0
+					for _, indexId in pairs(playerData.data.equipped.hero) do
+						m += findHero(findItemWithIndexId(playerData.data.inventory.hero, indexId).id).multiplier
+					end
+					return m
+				end
+				
+				local weaponData = find(equippedWeaponData.id)
+				local weaponData2 = equippedWeaponData2 and find(equippedWeaponData2.id)
+	
+				local weaponPower = weaponData.power * (itemLevel.getMultiFromLevel(equippedWeaponData.level) or 1)
+				local weaponPower2 = weaponData2 and weaponData2.power * (itemLevel.getMultiFromLevel(equippedWeaponData2.level) or 1)
 
-            local a
+				local baseDamage =  if weaponPower2 then (weaponPower2 + weaponPower) else weaponPower
+				power = baseDamage *
+				(
+					getTotalMulti()
+					+ upgrade.getValueFromUpgrades(player, "Coin Magnet")
+					+ ascension.getPowerMultiplier(playerData.data.ascension)
+					+ math.max(levels[playerData.data.level].multiplier, 1)
+				) * (pass.hasPass(player, "2xCoin") and 2 or 1)
 
-            for _, dat in pairs(weapons) do
-                if dat.id == id then
-                    a = dat
-                    break
-                end
-            end
-
-            p:apply(function()
-                p.data.coins += math.random(1, 3) * a.coin * (
-                    upgrade.getValueFromUpgrades(player, "Coin Magnet")
-                    + ascension.getCoinMultiplier(p.data.ascension)
-                ) * (pass.hasPass(player, "2xCoin") and 2 or 1)
+            playerData:apply(function()
+				local num = power*random:NextNumber(.6, 1.2)
+				playerData.data.stats.coinsCollected += num
+                playerData.data.coins += num
             end)
         end)
         

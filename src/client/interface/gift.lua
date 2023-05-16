@@ -5,6 +5,7 @@
     Contact     > Twitter: https://twitter.com/averyark_
     Created     > 13/04/2023
 --]]
+local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local Players = game:GetService("Players")
@@ -48,16 +49,22 @@ local giftDatas = {
     ["normal"] = {
         ["64px"] = "rbxassetid://13110797638",
         ["512px"] = "rbxassetid://13111926114",
+        secondaryColor = Color3.fromRGB(162, 68, 68),
+        primaryColor = Color3.fromRGB(221, 93, 93),
         order = 1
     },
     ["daily"] = {
         ["64px"] = "rbxassetid://13110797638",
         ["512px"] = "rbxassetid://13111926114",
+        secondaryColor = Color3.fromRGB(162, 68, 68),
+        primaryColor = Color3.fromRGB(221, 93, 93),
         order = 1
     },
     ["premium"] = {
         ["64px"] = "rbxassetid://13112783989",
         ["512px"] = "rbxassetid://13112781731",
+        secondaryColor = Color3.fromRGB(67, 26, 143),
+        primaryColor = Color3.fromRGB(100, 38, 208),
         order = 2,
     },
 }
@@ -118,6 +125,15 @@ local openGift = function(
 
     giftUi.mainframe.icon.Image = giftDatas[giftType]["512px"]
     giftUi.mainframe.upper.container.icon.Image = giftDatas[giftType]["64px"]
+    giftUi.mainframe.upper.BackgroundColor3 = giftDatas[giftType].primaryColor
+    giftUi.mainframe.upper.stroke.Color = giftDatas[giftType].secondaryColor
+    giftUi.mainframe.background.stroke.Color = giftDatas[giftType].primaryColor
+
+    if giftType == "premium" then
+        giftUi.mainframe.buttons.extra.Visible = false
+    else
+        giftUi.mainframe.buttons.extra.Visible = true
+    end
     
     local coinReward = function(amount: number, order)
         local frame = giftUi.templates.coinTemplate:Clone()
@@ -168,13 +184,11 @@ local openGift = function(
         order += 1
     end
 
-    print(rewards)
-
     for _, rewardData in pairs(rewards.default) do
         reward(rewardData)
     end
 
-    if streak > 1 then
+    if streak > 2 then
         text(`{streak} Days Streak Bonuses`, order)
         order += 1
         for _, rewardData in pairs(rewards.streak) do
@@ -308,13 +322,19 @@ return {
         end)
         okayButton.MouseLeave:Connect(function()
             tween.instance(okayButton.innerOutline.stroke, {
-                Color = Color3.fromRGB(183, 77, 77)
+                Color = Color3.fromRGB(191, 134, 0)
             }, .15)
+            tween.instance(okayButton.scale, {
+                Scale = 1,
+            }, .2)
         end)
         okayButton.MouseEnter:Connect(function()
             tween.instance(okayButton.innerOutline.stroke, {
-                Color = Color3.fromRGB(229, 96, 96)
+                Color = Color3.fromRGB(255, 179, 0)
             }, .15)
+            tween.instance(okayButton.scale, {
+                Scale = 1.02,
+            }, .2)
         end)
 
         extraButton.MouseButton1Down:Connect(function()
@@ -332,13 +352,21 @@ return {
             tween.instance(extraButton.info.icon.icon, {
                 Rotation = 0
             }, .1)
+            tween.instance(extraButton.scale, {
+                Scale = 1,
+            }, .2)
             mouseIn = false
+        end)
+        extraButton.Activated:Connect(function(inputObject, clickCount)
+            MarketplaceService:PromptProductPurchase(Players.LocalPlayer, 1528159465)
         end)
         extraButton.MouseEnter:Connect(function()
             tween.instance(extraButton.innerOutline.stroke, {
                 Color = Color3.fromRGB(117, 46, 250)
             }, .2)
-
+            tween.instance(extraButton.scale, {
+                Scale = 1.02,
+            }, .2)
             mouseIn = true
             while mouseIn do
                 if not mouseIn then break end
@@ -354,6 +382,12 @@ return {
             tween.instance(extraButton.info.icon.icon, {
                 Rotation = 0
             }, .05)
+        end)
+
+        MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, productId, isPurchased)
+            if productId == 1528159465 then
+                main.unfocus()
+            end
         end)
 
         --updateGiftButton()
