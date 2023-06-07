@@ -129,17 +129,20 @@ local suffix = {
 	mathUtil.abbreviate(1500000, 1) -- Output: "1.5M"
 	```
 ]]
-mathUtil.abbreviate = function(n: number, precision: number?, roundFalse: boolean): string
+mathUtil.abbreviate = function(n: number, precision: number?): string
 	assert(t.number(n), "number expected")
 	assert(precision == nil or t.number(precision), "number or nil expected")
 	-- number abbreviation
+<<<<<<< HEAD:Packages/_Index/averyark_adk@2.0.1/adk/src/number.luau
 	if n < 1000 then
 		return if roundFalse then tostring(math.round(n * 1000) / 1000) else tostring(math.round(n))
 	end
+=======
+>>>>>>> parent of c17dba2 (sync):src/shared/number.lua
 	if n == math.huge then
 		return tostring(n)
 	end
-	precision = precision or 2
+	precision = n < 1000 and 0 or (precision or 2)
 	local exp = math.floor(math.log(math.max(1, math.abs(n)), 1000))
 	local suffix = suffixes[1 + exp] or ("e+" .. exp)
 	local norm = math.floor(n * ((10 ^ precision :: number) / (1000 ^ exp))) / (10 ^ precision :: number)
