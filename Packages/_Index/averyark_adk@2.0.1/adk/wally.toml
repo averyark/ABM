@@ -1,17 +1,18 @@
 [package]
-name = "averyark/wip"
-version = "0.0.1"
+name = "averyark/adk"
+version = "2.0.1"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 authors = ["averyark"]
 license = "MIT"
-description = "Working in progress Framework."
+description = "AAstrax Development Kit (ADK) provides a collection of helpful libraries that are vital to lazy programmers such as myself."
 
 [dependencies]
 Janitor = "howmanysmall/janitor@^1.14.2"
+Red = "uncontained0/red@^1.0.0"
 Signal = "sleitnick/signal@1.0.1"
 Promise = "evaera/promise@4.0.0"
 t = "osyrisrblx/t@3.0.0"
 TableUtil = "tpc9000/tableutil@0.1.1"
-Red = "uncontained0/red@^1.0.0"
-Astrax = "averyark/adk@2.0.1"
+ProfileService = "brittonfischer/profileservice@2.1.5"
+BoatTween = "penguindevs/boattween@1.0.1"

@@ -1,37 +1,40 @@
 {
-  "name": "project",
+  "name": "astraxv2",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "Packages": {
-        "$path": "Packages"
-      },
-      "shared": {
-        "$path": "src/shared"
-      },
-      "client": {
-        "$path": "src/client"
+        "$path": "Packages",
+        "Astrax": {
+          "$path": "src"
+        }
       },
       "astraxSettings": {
-        "$path": "src/astraxSettings.luau"
+        "$path": "test/astraxSettings.lua"
+      },
+      "client": {
+        "$path": "test/client"
+      },
+      "shared": {
+        "$path": "test/shared"
       }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "server": {
-        "$path": "src/server"
+        "$path": "test/server"
       },
-      "loader": {
-        "$path": "src/loader.server.luau"
+      "serverLoader": {
+        "$path": "test/initialize.server.lua"
       }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "loader": {
-          "$path": "src/loader.client.luau"
+        "clientLoader": {
+          "$path": "test/initialize.client.lua"
         }
       }
     }
